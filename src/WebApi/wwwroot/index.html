@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CDN Freelancers</title>
+<style>
+body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+header { display:flex; justify-content:space-between; align-items:center; }
+section { margin-top:1.5rem; }
+input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
+#freelancers tbody tr.archived { background:#f5d7d7; }
+.badge { background:#1976d2; color:#fff; padding:2px 6px; border-radius:4px; font-size:.75rem; margin-right:4px; display:inline-block; }
+.hobbies .badge { background:#9c27b0; }
+.flex { display:flex; gap:1rem; flex-wrap:wrap; }
+.card { border:1px solid #ccc; padding:1rem; border-radius:8px; width:320px; position:relative; }
+.card .arch { position:absolute; top:8px; right:8px; font-size:.7rem; background:#444; color:#fff; padding:2px 4px; border-radius:3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CDN Freelancers</h1>
+  <div>
+    <label><input type="checkbox" id="showArchived" /> Show Archived</label>
+  </div>
+</header>
+<section>
+  <h2>Create / Edit</h2>
+  <form id="freelancerForm">
+    <input type="hidden" id="freelancerId" />
+    <div><label>Username<br><input id="username" required /></label></div>
+    <div><label>Email<br><input id="email" type="email" required /></label></div>
+    <div><label>Phone<br><input id="phone" /></label></div>
+    <div><label>Skillsets (comma separated)<br><input id="skillsets" placeholder="C#,SQL" /></label></div>
+    <div><label>Hobbies (comma separated)<br><input id="hobbies" placeholder="Music,Chess" /></label></div>
+    <button type="submit">Save</button>
+    <button type="button" id="resetBtn">Reset</button>
+  </form>
+</section>
+<section>
+  <h2>Search</h2>
+  <input id="searchTerm" placeholder="search username/email" />
+  <button id="searchBtn">Search</button>
+  <button id="refreshBtn">All</button>
+</section>
+<section>
+  <h2>Freelancers</h2>
+  <div id="list" class="flex"></div>
+</section>
+<script>
+const api = (path, opts={}) => fetch(path, { headers: { 'Content-Type':'application/json' }, ...opts }).then(r=> r.ok ? r.json().catch(()=>null) : Promise.reject(r));
+
+async function loadAll() {
+  const includeArchived = document.getElementById('showArchived').checked;
+  const data = await api(`/api/freelancers?includeArchived=${includeArchived}`);
+  render(data);
+}
+async function search() {
+  const term = document.getElementById('searchTerm').value.trim();
+  if(!term) return loadAll();
+  const data = await api(`/api/freelancers/search?term=${encodeURIComponent(term)}`);
+  render(data);
+}
+function toList(v){ return v.split(',').map(x=>x.trim()).filter(Boolean); }
+
+function render(items){
+  const list = document.getElementById('list');
+  list.innerHTML='';
+  (items||[]).forEach(f=> {
+    const card = document.createElement('div');
+    card.className='card'+(f.isArchived?' archived':'');
+    card.innerHTML = `
+      <strong>${f.username}</strong> <span class="arch" style="display:${f.isArchived?'inline':'none'}">ARCHIVED</span><br>
+      <small>${f.email}</small><br>
+      <small>${f.phoneNumber||''}</small><br>
+      <div class="skills">${(f.skillsets||[]).map(s=>`<span class='badge'>${s.name}</span>`).join('')}</div>
+      <div class="hobbies">${(f.hobbies||[]).map(h=>`<span class='badge'>${h.name}</span>`).join('')}</div>
+      <div style='margin-top:.5rem;'>
+        <button data-act='edit'>Edit</button>
+        <button data-act='archive'>${f.isArchived?'Unarchive':'Archive'}</button>
+        <button data-act='delete'>Delete</button>
+      </div>`;
+    card.querySelectorAll('button').forEach(btn=> btn.addEventListener('click', ()=> handleAction(f, btn.dataset.act)));
+    list.appendChild(card);
+  });
+}
+
+async function handleAction(f, act){
+  if(act==='edit'){
+    document.getElementById('freelancerId').value=f.id;
+    username.value=f.username; email.value=f.email; phone.value=f.phoneNumber;
+    skillsets.value=(f.skillsets||[]).map(s=>s.name).join(',');
+    hobbies.value=(f.hobbies||[]).map(h=>h.name).join(',');
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else if(act==='archive'){
+    await fetch(`/api/freelancers/${f.id}/archive?archive=${!f.isArchived}`, { method:'PATCH' });
+    loadAll();
+  } else if(act==='delete'){
+    if(confirm('Delete?')){ await fetch(`/api/freelancers/${f.id}`, { method:'DELETE' }); loadAll(); }
+  }
+}
+
+// Form submit
+freelancerForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const id = document.getElementById('freelancerId').value;
+  const payload = {
+    username: username.value.trim(),
+    email: email.value.trim(),
+    phoneNumber: phone.value.trim(),
+    skillsets: toList(skillsets.value),
+    hobbies: toList(hobbies.value)
+  };
+  if(id){
+    await fetch(`/api/freelancers/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  } else {
+    await fetch(`/api/freelancers`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  }
+  resetForm();
+  loadAll();
+});
+
+function resetForm(){
+  freelancerForm.reset();
+  document.getElementById('freelancerId').value='';
+}
+resetBtn.addEventListener('click', resetForm);
+searchBtn.addEventListener('click', search);
+refreshBtn.addEventListener('click', loadAll);
+showArchived.addEventListener('change', loadAll);
+
+loadAll();
+</script>
+</body>
+</html>
