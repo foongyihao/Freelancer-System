@@ -67,7 +67,7 @@ public interface IFreelancerRepository
     /// <param name="pageSize">Page size (max 100).</param>
     /// <param name="includeArchived">Whether to include archived freelancers.</param>
     /// <param name="ct">Optional cancellation token.</param>
-    Task<PaginatedResult<Freelancer>> GetPagedAsync(int page, int pageSize, bool includeArchived, CancellationToken ct = default);
+    Task<PaginatedResult<Freelancer>> GetPagedAsync(int page, int pageSize, bool includeArchived, string? skillFilter = null, string? hobbyFilter = null, CancellationToken ct = default);
 
     /// <summary>
     /// Performs a paginated search over Username & Email (case-insensitive substring match).
@@ -76,7 +76,7 @@ public interface IFreelancerRepository
     /// <param name="page">1-based page number.</param>
     /// <param name="pageSize">Page size (max 100).</param>
     /// <param name="ct">Cancellation token.</param>
-    Task<PaginatedResult<Freelancer>> SearchPagedAsync(string term, int page, int pageSize, CancellationToken ct = default);
+    Task<PaginatedResult<Freelancer>> SearchPagedAsync(string term, int page, int pageSize, string? skillFilter = null, string? hobbyFilter = null, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -89,4 +89,12 @@ public sealed class PaginatedResult<T>
     public int PageSize { get; init; }
     public IReadOnlyList<T> Items { get; init; } = Array.Empty<T>();
     public int TotalPages => PageSize == 0 ? 0 : (int)Math.Ceiling((double)TotalCount / PageSize);
+}
+
+/// <summary>
+/// Exception thrown when attempting to create or update a freelancer with a duplicate username or email.
+/// </summary>
+public sealed class DuplicateFreelancerException : Exception
+{
+    public DuplicateFreelancerException(string message) : base(message) {}
 }

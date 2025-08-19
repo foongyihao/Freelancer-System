@@ -49,13 +49,14 @@ Swagger: http://localhost:5000/swagger
 
 | Method | Route                                      | Description                       |
 | ------ | ------------------------------------------ | --------------------------------- |
-| GET    | /api/freelancers?includeArchived=false     | List (filter archived)            |
-| GET    | /api/freelancers/{id}                      | Get by Id                         |
-| POST   | /api/freelancers                           | Create                            |
-| PUT    | /api/freelancers/{id}                      | Replace (incl. skillsets/hobbies) |
-| PATCH  | /api/freelancers/{id}/archive?archive=true | false                             |
-| DELETE | /api/freelancers/{id}                      | Delete                            |
-| GET    | /api/freelancers/search?term=abc           | Wildcard search                   |
+| GET    | /api/v1/freelancers?includeArchived=false     | List (filter archived)            |
+| GET    | /api/v1/freelancers/{id}                      | Get by Id                         |
+| POST   | /api/v1/freelancers                           | Create                            |
+| PUT    | /api/v1/freelancers/{id}                      | Replace (incl. skillsets/hobbies) |
+| PATCH  | /api/v1/freelancers/{id}                      | Partial update (archive toggle)   |
+| DELETE | /api/v1/freelancers/{id}                      | Delete                            |
+| GET    | /api/v1/freelancers/search?term=abc           | Wildcard search                   |
+| GET    | /api/v1/freelancers?term=abc                  | Wildcard search (via query term)  |
 
 Request body (POST/PUT):
 
@@ -67,6 +68,11 @@ Request body (POST/PUT):
 	"skillsets": ["C#","SQL"],
 	"hobbies": ["Chess"]
 }
+```
+Partial archive toggle (PATCH):
+
+```
+{ "isArchived": true }
 ```
 
 ## Database Configuration

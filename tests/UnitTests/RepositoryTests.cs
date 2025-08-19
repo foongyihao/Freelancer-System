@@ -1,5 +1,6 @@
 using CDN.Freelancers.Core;
 using CDN.Freelancers.Infrastructure;
+using CDN.Freelancers.Application;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -47,6 +48,31 @@ public class RepositoryTests
         await repo.ArchiveAsync(f.Id, true);
         var list = await repo.GetAllAsync(includeArchived:false);
         Assert.DoesNotContain(list, x => x.Id == f.Id);
+    }
+
+    [Fact]
+    public async Task Duplicate_Add_Throws()
+    {
+        var repo = CreateRepository();
+        await repo.AddAsync(new Freelancer { Username = "dup", Email = "dup@example.com" });
+        await Assert.ThrowsAsync<DuplicateFreelancerException>(async () =>
+            await repo.AddAsync(new Freelancer { Username = "dup", Email = "other@example.com" }));
+        await Assert.ThrowsAsync<DuplicateFreelancerException>(async () =>
+            await repo.AddAsync(new Freelancer { Username = "other", Email = "dup@example.com" }));
+    }
+
+    [Fact]
+    public async Task Filtering_By_Skill_And_Hobby_Works()
+    {
+        var repo = CreateRepository();
+        await repo.AddAsync(new Freelancer { Username = "skillA", Email = "a@ex.com", Skillsets = new(){ new Skillset { Name = "C#" } }, Hobbies = new(){ new Hobby { Name = "Chess" } } });
+        await repo.AddAsync(new Freelancer { Username = "skillB", Email = "b@ex.com", Skillsets = new(){ new Skillset { Name = "Go" } }, Hobbies = new(){ new Hobby { Name = "Cycling" } } });
+        var page = await repo.GetPagedAsync(1, 10, includeArchived:false, skillFilter:"c#");
+        Assert.Single(page.Items);
+        Assert.Equal("skillA", page.Items.First().Username);
+        var page2 = await repo.GetPagedAsync(1, 10, includeArchived:false, hobbyFilter:"cyc");
+        Assert.Single(page2.Items);
+        Assert.Equal("skillB", page2.Items.First().Username);
     }
 
     [Fact]

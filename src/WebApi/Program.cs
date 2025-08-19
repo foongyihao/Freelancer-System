@@ -8,6 +8,11 @@ using CDN.Freelancers.Core;
 var builder = WebApplication.CreateBuilder(args);
 
 var useSqlite = builder.Configuration.GetValue<bool>("UseSqlite");
+builder.Services.AddRouting(o =>
+{
+    o.LowercaseUrls = true;
+    o.LowercaseQueryStrings = true;
+});
 builder.Services.AddDbContext<FreelancerDbContext>(o =>
 {
     if (useSqlite)
@@ -44,7 +49,14 @@ builder.Services.AddSwaggerGen(c =>
         if (System.IO.File.Exists(path)) c.IncludeXmlComments(path, includeControllerXmlComments: true);
     }
 });
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(o =>
+{
+    o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+});
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(o =>
+{
+    o.SuppressModelStateInvalidFilter = true; // rely on manual validation in controllers
+});
 
 var app = builder.Build();
 
@@ -66,3 +78,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+// Expose Program class publicly for WebApplicationFactory<T> in integration tests
+public partial class Program { }

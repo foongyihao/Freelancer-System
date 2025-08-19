@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using CDN.Freelancers.Application;
 using CDN.Freelancers.Core;
@@ -6,7 +7,7 @@ using CDN.Freelancers.Core;
 namespace CDN.Freelancers.WebApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/freelancers")]
 [Produces("application/json")]
 public class FreelancersController : ControllerBase
 {
@@ -16,16 +17,32 @@ public class FreelancersController : ControllerBase
     /// <summary>
     /// List freelancers with pagination (non-archived by default).
     /// </summary>
+    /// <param name="term">Optional case-insensitive substring to match username or email.</param>
     /// <param name="includeArchived">Includes freelancers who are archived when true.</param>
     /// <param name="page">1-based page number (default 1).</param>
     /// <param name="pageSize">Page size (default 10, max 100).</param>
-    [HttpGet]
-    [ProducesResponseType(typeof(PaginatedResult<Freelancer>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get(
-        [FromQuery, Description("Includes freelancers who are archived when true.")] bool includeArchived = false,
-        [FromQuery, Description("1-based page number (default 1)." )] int page = 1,
-        [FromQuery, Description("Page size (default 10, max 100)." )] int pageSize = 10)
-        => Ok(await _repo.GetPagedAsync(page, pageSize, includeArchived));
+    /// <param name="skill">Optional case-insensitive substring to match a skill name.</param>
+    /// <param name="hobby">Optional case-insensitive substring to match a hobby name.</param>
+        [HttpGet]
+        [ProducesResponseType(typeof(PaginatedResult<Freelancer>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Get(
+            [FromQuery, Description("Case-insensitive username/email contains filter (optional). ")] string? term = null,
+            [FromQuery, Description("Includes archived when true.")] bool includeArchived = false,
+            [FromQuery, Description("1-based page number (default 1)." )] int page = 1,
+            [FromQuery, Description("Page size (default 10, max 100)." )] int pageSize = 10,
+            [FromQuery, Description("Filter containing skill substring (optional)." )] string? skill = null,
+            [FromQuery, Description("Filter containing hobby substring (optional)." )] string? hobby = null)
+        {
+            if (page < 1 || pageSize < 1 || pageSize > 100)
+                return Problem(
+                    title: "Invalid paging parameters",
+                    detail: "'page' must be >= 1 and 'pageSize' must be between 1 and 100.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            if (!string.IsNullOrWhiteSpace(term))
+                return Ok(await _repo.SearchPagedAsync(term, page, pageSize, skill, hobby));
+            return Ok(await _repo.GetPagedAsync(page, pageSize, includeArchived, skill, hobby));
+        }
 
     /// <summary>
     /// Get a single freelancer by Id.
@@ -40,36 +57,38 @@ public class FreelancersController : ControllerBase
         return f is null ? NotFound() : Ok(f);
     }
 
-    /// <summary>
-    /// Wildcard paginated search over Username and Email (case-insensitive).
-    /// </summary>
-    /// <param name="term">Substring to match in username or email.</param>
-    /// <param name="page">1-based page number (default 1).</param>
-    /// <param name="pageSize">Page size (default 10, max 100).</param>
-    [HttpGet("search")]
-    [ProducesResponseType(typeof(PaginatedResult<Freelancer>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Search(
-        [FromQuery, Description("Case-insensitive substring matched against username or email.")] string term,
-        [FromQuery, Description("1-based page number (default 1)." )] int page = 1,
-        [FromQuery, Description("Page size (default 10, max 100)." )] int pageSize = 10)
-        => Ok(await _repo.SearchPagedAsync(term, page, pageSize));
+    // Removed separate /search endpoint: unified via optional 'term' in GET
 
     /// <summary>
     /// Create a new freelancer.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(Freelancer), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] FreelancerRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Email))
+            return Problem(title: "Validation error", detail: "Username and Email are required.", statusCode: StatusCodes.Status400BadRequest);
+        if (!request.Email.Contains('@'))
+            return Problem(title: "Validation error", detail: "Email must contain '@'.", statusCode: StatusCodes.Status400BadRequest);
         var model = new Freelancer
         {
             Username = request.Username,
             Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
-            Skillsets = request.Skillsets.Select(s => new Skillset { Name = s }).ToList(),
-            Hobbies = request.Hobbies.Select(h => new Hobby { Name = h }).ToList()
+            PhoneNumber = request.PhoneNumber ?? string.Empty,
+            Skillsets = (request.Skillsets ?? new List<string>()).Select(s => new Skillset { Name = s }).ToList(),
+            Hobbies = (request.Hobbies ?? new List<string>()).Select(h => new Hobby { Name = h }).ToList()
         };
-        await _repo.AddAsync(model);
+    model.IsArchived = request.IsArchived;
+        try
+        {
+            await _repo.AddAsync(model);
+        }
+        catch (DuplicateFreelancerException ex)
+        {
+            return Problem(title: "Duplicate freelancer", detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
+        }
         return CreatedAtAction(nameof(GetOne), new { id = model.Id }, model);
     }
 
@@ -78,31 +97,54 @@ public class FreelancersController : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(Guid id, [FromBody] FreelancerRequest request)
     {
+        var existing = await _repo.GetAsync(id);
+        if (existing == null) return NotFound();
+        if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Email))
+            return Problem(title: "Validation error", detail: "Username and Email are required.", statusCode: StatusCodes.Status400BadRequest);
+        if (!request.Email.Contains('@'))
+            return Problem(title: "Validation error", detail: "Email must contain '@'.", statusCode: StatusCodes.Status400BadRequest);
         var model = new Freelancer
         {
             Id = id,
             Username = request.Username,
             Email = request.Email,
-            PhoneNumber = request.PhoneNumber,
-            Skillsets = request.Skillsets.Select(s => new Skillset { Name = s, FreelancerId = id }).ToList(),
-            Hobbies = request.Hobbies.Select(h => new Hobby { Name = h, FreelancerId = id }).ToList()
+            PhoneNumber = request.PhoneNumber ?? string.Empty,
+            Skillsets = (request.Skillsets ?? new List<string>()).Select(s => new Skillset { Name = s, FreelancerId = id }).ToList(),
+            Hobbies = (request.Hobbies ?? new List<string>()).Select(h => new Hobby { Name = h, FreelancerId = id }).ToList()
         };
-        await _repo.UpdateAsync(model);
+    model.IsArchived = request.IsArchived;
+        try
+        {
+            await _repo.UpdateAsync(model);
+        }
+        catch (DuplicateFreelancerException ex)
+        {
+            return Problem(title: "Duplicate freelancer", detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
+        }
         return NoContent();
     }
 
     /// <summary>
-    /// Archive or unarchive a freelancer.
+    /// Partial update (currently only supports toggling archive state).
     /// </summary>
-    /// <param name="id">Freelancer GUID.</param>
-    /// <param name="archive">True to archive, false to unarchive.</param>
-    [HttpPatch("{id:guid}/archive")]
+    [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> Archive(Guid id, [FromQuery, Description("True to archive, false to unarchive.")] bool archive)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Patch(Guid id, [FromBody] FreelancerPatchRequest request)
     {
-        await _repo.ArchiveAsync(id, archive);
+        var existing = await _repo.GetAsync(id);
+        if (existing == null) return NotFound();
+        if (request?.IsArchived is null)
+        {
+            return Problem(title: "Invalid patch payload", detail: "Provide 'isArchived' boolean field.", statusCode: StatusCodes.Status400BadRequest);
+        }
+        await _repo.ArchiveAsync(id, request.IsArchived.Value);
         return NoContent();
     }
 
@@ -112,9 +154,12 @@ public class FreelancersController : ControllerBase
     /// <param name="id">Freelancer GUID.</param>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        await _repo.DeleteAsync(id);
-        return NoContent();
+    var existing = await _repo.GetAsync(id);
+    if (existing == null) return NotFound();
+    await _repo.DeleteAsync(id);
+    return NoContent();
     }
 }

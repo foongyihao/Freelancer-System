@@ -23,7 +23,7 @@ public class Freelancer
     /// <summary>
     /// Primary phone number (optional formatting not enforced here).
     /// </summary>
-    public string PhoneNumber { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
 
     /// <summary>
     /// Indicates whether the freelancer has been archived (excluded by default from list queries).
