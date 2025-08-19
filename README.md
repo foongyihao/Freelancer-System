@@ -69,27 +69,6 @@ Request body (POST/PUT):
 }
 ```
 
-## Quick cURL Examples
-
-```
-# Create
-curl -X POST http://localhost:5000/api/freelancers \
-	-H "Content-Type: application/json" \
-	-d '{"username":"alice","email":"alice@example.com","phoneNumber":"123","skillsets":["C#"],"hobbies":["Chess"]}'
-
-# List
-curl http://localhost:5000/api/freelancers?includeArchived=false
-
-# Search
-curl "http://localhost:5000/api/freelancers/search?term=ali"
-
-# Archive
-curl -X PATCH "http://localhost:5000/api/freelancers/<id>/archive?archive=true"
-
-# Delete
-curl -X DELETE http://localhost:5000/api/freelancers/<id>
-```
-
 ## Database Configuration
 
 `appsettings.json`:
@@ -111,15 +90,3 @@ dotnet test
 ```
 
 Current tests cover: add/get, search, archive filter.
-
-## Notes & Next Steps (Potential Improvements)
-
-- Validation (FluentValidation)
-- Pagination & sorting
-- Global error/exception handling middleware
-- DTO mapping (e.g. Mapster/AutoMapper)
-- Authentication & authorization
-- Proper migrations instead of EnsureCreated
-- Caching layer for read endpoints
-
-All mandatory basic requirements are implemented; UI fulfills the optional interface requirement.

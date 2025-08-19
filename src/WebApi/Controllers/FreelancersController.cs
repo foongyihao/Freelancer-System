@@ -14,13 +14,18 @@ public class FreelancersController : ControllerBase
     public FreelancersController(IFreelancerRepository repo) => _repo = repo;
 
     /// <summary>
-    /// List freelancers (non-archived by default).
+    /// List freelancers with pagination (non-archived by default).
     /// </summary>
     /// <param name="includeArchived">Includes freelancers who are archived when true.</param>
+    /// <param name="page">1-based page number (default 1).</param>
+    /// <param name="pageSize">Page size (default 10, max 100).</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<Freelancer>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get([FromQuery, Description("Includes freelancers who are archived when true.")] bool includeArchived = false)
-        => Ok(await _repo.GetAllAsync(includeArchived));
+    [ProducesResponseType(typeof(PaginatedResult<Freelancer>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Get(
+        [FromQuery, Description("Includes freelancers who are archived when true.")] bool includeArchived = false,
+        [FromQuery, Description("1-based page number (default 1)." )] int page = 1,
+        [FromQuery, Description("Page size (default 10, max 100)." )] int pageSize = 10)
+        => Ok(await _repo.GetPagedAsync(page, pageSize, includeArchived));
 
     /// <summary>
     /// Get a single freelancer by Id.
@@ -36,13 +41,18 @@ public class FreelancersController : ControllerBase
     }
 
     /// <summary>
-    /// Wildcard search over Username and Email (case-insensitive).
+    /// Wildcard paginated search over Username and Email (case-insensitive).
     /// </summary>
     /// <param name="term">Substring to match in username or email.</param>
+    /// <param name="page">1-based page number (default 1).</param>
+    /// <param name="pageSize">Page size (default 10, max 100).</param>
     [HttpGet("search")]
-    [ProducesResponseType(typeof(IEnumerable<Freelancer>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Search([FromQuery, Description("Case-insensitive substring matched against username or email.")] string term)
-        => Ok(await _repo.SearchAsync(term));
+    [ProducesResponseType(typeof(PaginatedResult<Freelancer>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Search(
+        [FromQuery, Description("Case-insensitive substring matched against username or email.")] string term,
+        [FromQuery, Description("1-based page number (default 1)." )] int page = 1,
+        [FromQuery, Description("Page size (default 10, max 100)." )] int pageSize = 10)
+        => Ok(await _repo.SearchPagedAsync(term, page, pageSize));
 
     /// <summary>
     /// Create a new freelancer.

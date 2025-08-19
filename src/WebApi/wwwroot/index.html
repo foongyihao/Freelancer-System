@@ -14,6 +14,8 @@ input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
 .flex { display:flex; gap:1rem; flex-wrap:wrap; }
 .card { border:1px solid #ccc; padding:1rem; border-radius:8px; width:320px; position:relative; }
 .card .arch { position:absolute; top:8px; right:8px; font-size:.7rem; background:#444; color:#fff; padding:2px 4px; border-radius:3px; }
+.error-box { display:none; background:#fdecea; color:#611a15; border:1px solid #f5c6cb; padding:.75rem 1rem; border-radius:6px; margin-top:1rem; position:relative; }
+.error-box button { position:absolute; top:4px; right:6px; background:none; border:none; color:#611a15; cursor:pointer; font-size:14px; }
 </style>
 </head>
 <body>
@@ -44,21 +46,70 @@ input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
 </section>
 <section>
   <h2>Freelancers</h2>
+  <div id="error" class="error-box"><button aria-label="Dismiss" onclick="clearError()">✕</button><span id="errorMsg"></span></div>
   <div id="list" class="flex"></div>
+  <div id="pager" style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
+    <button id="prevBtn">Prev</button>
+    <span id="pageInfo"></span>
+    <button id="nextBtn">Next</button>
+  </div>
 </section>
 <script>
-const api = (path, opts={}) => fetch(path, { headers: { 'Content-Type':'application/json' }, ...opts }).then(r=> r.ok ? r.json().catch(()=>null) : Promise.reject(r));
+async function api(path, opts={}) {
+  try {
+    const resp = await fetch(path, { headers: { 'Content-Type':'application/json' }, ...opts });
+    if(!resp.ok){
+      let msg;
+      try { const data = await resp.json(); msg = data.title || data.message || JSON.stringify(data); }
+      catch { msg = await resp.text(); }
+      throw new Error(msg || `Request failed (${resp.status})`);
+    }
+    try { return await resp.json(); } catch { return null; }
+  } catch (err){
+    showError(err instanceof Error ? err.message : String(err));
+    throw err;
+  }
+}
+
+function showError(message){
+  const box = document.getElementById('error');
+  const span = document.getElementById('errorMsg');
+  span.textContent = message;
+  box.style.display = 'block';
+}
+function clearError(){
+  const box = document.getElementById('error');
+  box.style.display = 'none';
+  document.getElementById('errorMsg').textContent='';
+}
+
+let currentPage = 1;
+let totalPages = 1;
+const pageSize = 10;
+let currentSearch = '';
 
 async function loadAll() {
   const includeArchived = document.getElementById('showArchived').checked;
-  const data = await api(`/api/freelancers?includeArchived=${includeArchived}`);
-  render(data);
+  clearError();
+  const data = await api(`/api/freelancers?includeArchived=${includeArchived}&page=${currentPage}&pageSize=${pageSize}`)
+    .catch(()=>null);
+  const items = data?.items || [];
+  totalPages = data?.totalPages || 1;
+  render(items);
+  updatePager();
 }
 async function search() {
   const term = document.getElementById('searchTerm').value.trim();
-  if(!term) return loadAll();
-  const data = await api(`/api/freelancers/search?term=${encodeURIComponent(term)}`);
-  render(data);
+  currentSearch = term;
+  currentPage = 1;
+  if(!term){ currentSearch=''; return loadAll(); }
+  clearError();
+  const data = await api(`/api/freelancers/search?term=${encodeURIComponent(term)}&page=${currentPage}&pageSize=${pageSize}`)
+    .catch(()=>null);
+  const items = data?.items || [];
+  totalPages = data?.totalPages || 1;
+  render(items);
+  updatePager();
 }
 function toList(v){ return v.split(',').map(x=>x.trim()).filter(Boolean); }
 
@@ -93,9 +144,19 @@ async function handleAction(f, act){
     window.scrollTo({top:0, behavior:'smooth'});
   } else if(act==='archive'){
     await fetch(`/api/freelancers/${f.id}/archive?archive=${!f.isArchived}`, { method:'PATCH' });
-    loadAll();
+  if(currentSearch){ search(); } else { loadAll(); }
   } else if(act==='delete'){
-    if(confirm('Delete?')){ await fetch(`/api/freelancers/${f.id}`, { method:'DELETE' }); loadAll(); }
+    if(confirm('Delete?')){ await fetch(`/api/freelancers/${f.id}`, { method:'DELETE' });
+      if(!currentSearch){
+        // Adjust page if we deleted last item on page
+        const includeArchived = document.getElementById('showArchived').checked;
+        const pageCheck = await api(`/api/freelancers?includeArchived=${includeArchived}&page=${currentPage}&pageSize=${pageSize}`);
+        if(pageCheck.items && pageCheck.items.length === 0 && currentPage>1){ currentPage--; }
+        loadAll();
+      } else {
+        search();
+      }
+    }
   }
 }
 
@@ -111,12 +172,14 @@ freelancerForm.addEventListener('submit', async (e)=>{
     hobbies: toList(hobbies.value)
   };
   if(id){
-    await fetch(`/api/freelancers/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  clearError();
+  await api(`/api/freelancers/${id}`, { method:'PUT', body: JSON.stringify(payload) }).catch(()=>{});
   } else {
-    await fetch(`/api/freelancers`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  clearError();
+  await api(`/api/freelancers`, { method:'POST', body: JSON.stringify(payload) }).catch(()=>{});
   }
   resetForm();
-  loadAll();
+  if(currentSearch){ search(); } else { loadAll(); }
 });
 
 function resetForm(){
@@ -125,8 +188,17 @@ function resetForm(){
 }
 resetBtn.addEventListener('click', resetForm);
 searchBtn.addEventListener('click', search);
-refreshBtn.addEventListener('click', loadAll);
-showArchived.addEventListener('change', loadAll);
+refreshBtn.addEventListener('click', ()=> { currentSearch=''; currentPage=1; loadAll(); });
+showArchived.addEventListener('change', ()=> { currentPage=1; currentSearch=''; loadAll(); });
+prevBtn.addEventListener('click', ()=> { if(currentPage>1){ currentPage--; loadAll(); }});
+nextBtn.addEventListener('click', ()=> { if(currentPage<totalPages){ currentPage++; loadAll(); }});
+
+function updatePager(){
+  document.getElementById('pageInfo').textContent = `Page ${currentPage} / ${totalPages}`;
+  document.getElementById('pager').style.display = 'flex';
+  prevBtn.disabled = currentPage<=1;
+  nextBtn.disabled = currentPage>=totalPages;
+}
 
 loadAll();
 </script>

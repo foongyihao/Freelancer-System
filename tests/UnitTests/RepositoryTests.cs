@@ -48,4 +48,41 @@ public class RepositoryTests
         var list = await repo.GetAllAsync(includeArchived:false);
         Assert.DoesNotContain(list, x => x.Id == f.Id);
     }
+
+    [Fact]
+    public async Task GetPagedAsync_Returns_Correct_Page_Metadata()
+    {
+        var repo = CreateRepository();
+        for(int i=0;i<25;i++)
+        {
+            await repo.AddAsync(new Freelancer { Username = $"user{i:00}", Email = $"user{i:00}@example.com" });
+        }
+        var page2 = await repo.GetPagedAsync(page:2, pageSize:10, includeArchived:false);
+        Assert.Equal(25, page2.TotalCount);
+        Assert.Equal(3, page2.TotalPages);
+        Assert.Equal(2, page2.Page);
+        Assert.Equal(10, page2.Items.Count);
+        // Ensure ordering by Username asc (user00 ... user24)
+        Assert.StartsWith("user10", page2.Items.First().Username);
+    }
+
+    [Fact]
+    public async Task SearchPagedAsync_Filters_And_Paginates()
+    {
+        var repo = CreateRepository();
+        // Add some with pattern 'match' and others not matching
+        for(int i=0;i<15;i++)
+        {
+            await repo.AddAsync(new Freelancer { Username = $"match{i:00}", Email = $"m{i:00}@example.com" });
+        }
+        for(int i=0;i<5;i++)
+        {
+            await repo.AddAsync(new Freelancer { Username = $"other{i:00}", Email = $"o{i:00}@example.com" });
+        }
+        var result = await repo.SearchPagedAsync("match", page:2, pageSize:5);
+        Assert.Equal(15, result.TotalCount); // only 'match*'
+        Assert.Equal(3, result.TotalPages);
+        Assert.Equal(5, result.Items.Count);
+        Assert.All(result.Items, x => Assert.StartsWith("match", x.Username));
+    }
 }

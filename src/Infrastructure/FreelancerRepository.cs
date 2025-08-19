@@ -90,4 +90,29 @@ public class FreelancerRepository : IFreelancerRepository
         existing.Hobbies = freelancer.Hobbies;
         await _ctx.SaveChangesAsync(ct);
     }
+
+    /// <inheritdoc />
+    public async Task<PaginatedResult<Freelancer>> GetPagedAsync(int page, int pageSize, bool includeArchived, CancellationToken ct = default)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? Math.Clamp(pageSize, 1, 100) : pageSize;
+        var q = _ctx.Freelancers.Include(f=>f.Skillsets).Include(f=>f.Hobbies).AsQueryable();
+        if (!includeArchived) q = q.Where(f => !f.IsArchived);
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderBy(f=>f.Username).Skip((page-1)*pageSize).Take(pageSize).ToListAsync(ct);
+        return new PaginatedResult<Freelancer>{ TotalCount = total, Page = page, PageSize = pageSize, Items = items };
+    }
+
+    /// <inheritdoc />
+    public async Task<PaginatedResult<Freelancer>> SearchPagedAsync(string term, int page, int pageSize, CancellationToken ct = default)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? Math.Clamp(pageSize, 1, 100) : pageSize;
+        term = term.ToLower();
+        var q = _ctx.Freelancers.Include(f=>f.Skillsets).Include(f=>f.Hobbies)
+            .Where(f => f.Username.ToLower().Contains(term) || f.Email.ToLower().Contains(term));
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderBy(f=>f.Username).Skip((page-1)*pageSize).Take(pageSize).ToListAsync(ct);
+        return new PaginatedResult<Freelancer>{ TotalCount = total, Page = page, PageSize = pageSize, Items = items };
+    }
 }

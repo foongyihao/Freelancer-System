@@ -59,4 +59,34 @@ public interface IFreelancerRepository
     /// <param name="archive">True to archive; false to unarchive.</param>
     /// <param name="ct">Optional cancellation token.</param>
     Task ArchiveAsync(Guid id, bool archive, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves a page of freelancers (ordered by Username ascending).
+    /// </summary>
+    /// <param name="page">1-based page number.</param>
+    /// <param name="pageSize">Page size (max 100).</param>
+    /// <param name="includeArchived">Whether to include archived freelancers.</param>
+    /// <param name="ct">Optional cancellation token.</param>
+    Task<PaginatedResult<Freelancer>> GetPagedAsync(int page, int pageSize, bool includeArchived, CancellationToken ct = default);
+
+    /// <summary>
+    /// Performs a paginated search over Username & Email (case-insensitive substring match).
+    /// </summary>
+    /// <param name="term">Search substring.</param>
+    /// <param name="page">1-based page number.</param>
+    /// <param name="pageSize">Page size (max 100).</param>
+    /// <param name="ct">Cancellation token.</param>
+    Task<PaginatedResult<Freelancer>> SearchPagedAsync(string term, int page, int pageSize, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Standard wrapper for paginated results.
+/// </summary>
+public sealed class PaginatedResult<T>
+{
+    public int TotalCount { get; init; }
+    public int Page { get; init; }
+    public int PageSize { get; init; }
+    public IReadOnlyList<T> Items { get; init; } = Array.Empty<T>();
+    public int TotalPages => PageSize == 0 ? 0 : (int)Math.Ceiling((double)TotalCount / PageSize);
 }
