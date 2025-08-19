@@ -1,4 +1,4 @@
-namespace CDN.Freelancers.WebApi;
+namespace CDN.Freelancers.Presentation.Requests;
 
 /// <summary>
 /// Request DTO used for create and update operations on <c>Freelancer</c> resources.

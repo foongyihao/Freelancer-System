@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using CDN.Freelancers.Core;
+using CDN.Freelancers.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 using FluentAssertions;
 using Xunit;

@@ -1,4 +1,4 @@
-namespace CDN.Freelancers.WebApi;
+namespace CDN.Freelancers.Presentation.Requests;
 
 /// <summary>
 /// Request body for partial update of a freelancer. Currently only supports toggling archive state.

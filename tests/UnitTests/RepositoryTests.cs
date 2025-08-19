@@ -1,4 +1,4 @@
-using CDN.Freelancers.Core;
+using CDN.Freelancers.Domain;
 using CDN.Freelancers.Infrastructure;
 using CDN.Freelancers.Application;
 using Microsoft.EntityFrameworkCore;

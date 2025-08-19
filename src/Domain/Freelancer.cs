@@ -1,4 +1,4 @@
-namespace CDN.Freelancers.Core;
+namespace CDN.Freelancers.Domain;
 
 /// <summary>
 /// Represents a registered freelancer profile including related skillsets and hobbies.
@@ -39,46 +39,4 @@ public class Freelancer
     /// Collection of hobbies (one-to-many) for additional personal interests.
     /// </summary>
     public List<Hobby> Hobbies { get; set; } = new();
-}
-
-/// <summary>
-/// A single skill descriptor (e.g., "C#", "SQL", "React").
-/// </summary>
-public class Skillset
-{
-    /// <summary>
-    /// Surrogate integer primary key.
-    /// </summary>
-    public int Id { get; set; }
-
-    /// <summary>
-    /// Skill name / label.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Owning freelancer's GUID foreign key.
-    /// </summary>
-    public Guid FreelancerId { get; set; }
-}
-
-/// <summary>
-/// A single hobby descriptor (e.g., "Chess", "Photography").
-/// </summary>
-public class Hobby
-{
-    /// <summary>
-    /// Surrogate integer primary key.
-    /// </summary>
-    public int Id { get; set; }
-
-    /// <summary>
-    /// Hobby name / label.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Owning freelancer's GUID foreign key.
-    /// </summary>
-    public Guid FreelancerId { get; set; }
 }

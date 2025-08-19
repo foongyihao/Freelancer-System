@@ -2,9 +2,10 @@ using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using CDN.Freelancers.Application;
-using CDN.Freelancers.Core;
+using CDN.Freelancers.Domain;
+using CDN.Freelancers.Presentation.Requests;
 
-namespace CDN.Freelancers.WebApi.Controllers;
+namespace CDN.Freelancers.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/freelancers")]

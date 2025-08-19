@@ -32,8 +32,8 @@ input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
     <div><label>Username<br><input id="username" required /></label></div>
     <div><label>Email<br><input id="email" type="email" required /></label></div>
     <div><label>Phone<br><input id="phone" /></label></div>
-    <div><label>Skillsets (comma separated)<br><input id="skillsets" placeholder="C#,SQL" /></label></div>
-    <div><label>Hobbies (comma separated)<br><input id="hobbies" placeholder="Music,Chess" /></label></div>
+    <div><label>Skillsets<br><input id="skillsets" placeholder="C#,SQL" /></label></div>
+    <div><label>Hobbies<br><input id="hobbies" placeholder="Music,Chess" /></label></div>
     <button type="submit">Save</button>
     <button type="button" id="resetBtn">Reset</button>
   </form>
@@ -41,12 +41,14 @@ input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
 <section>
   <h2>Search</h2>
   <input id="searchTerm" placeholder="search username/email" />
+  <input id="searchSkill" placeholder="filter skill (optional)" />
+  <input id="searchHobby" placeholder="filter hobby (optional)" />
   <button id="searchBtn">Search</button>
   <button id="refreshBtn">All</button>
 </section>
 <section>
   <h2>Freelancers</h2>
-  <div id="error" class="error-box"><button aria-label="Dismiss" onclick="clearError()">✕</button><span id="errorMsg"></span></div>
+  <div id="error" class="error-box"><button aria-label="Dismiss" id="dismissError">✕</button><span id="errorMsg"></span></div>
   <div id="list" class="flex"></div>
   <div id="pager" style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
     <button id="prevBtn">Prev</button>
@@ -54,9 +56,7 @@ input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
     <button id="nextBtn">Next</button>
   </div>
 </section>
-<script src="js/api.js"></script>
-<script src="js/state.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/main.js"></script>
+<!-- ES Module entry point -->
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

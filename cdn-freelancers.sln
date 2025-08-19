@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi", "src/WebApi/WebApi.csproj", "{A3A1A32E-1100-4C71-97E1-0D93344D3D2F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation", "src/Presentation/Presentation.csproj", "{A3A1A32E-1100-4C71-97E1-0D93344D3D2F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "src/Infrastructure/Infrastructure.csproj", "{F6DA3E33-507A-4F1E-B4F8-1BC436967ED4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "src/Core/Core.csproj", "{6E813905-6068-4B7C-9863-604C85B3633A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src/Domain/Domain.csproj", "{6E813905-6068-4B7C-9863-604C85B3633A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "src/Application/Application.csproj", "{D92A29CA-CFB9-4AF4-9EA8-FF0AE4970BF3}"
 EndProject

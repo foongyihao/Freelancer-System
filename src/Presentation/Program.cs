@@ -2,7 +2,7 @@ using CDN.Freelancers.Application;
 using CDN.Freelancers.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using CDN.Freelancers.Core;
+using CDN.Freelancers.Domain;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,7 +42,7 @@ builder.Services.AddSwaggerGen(c =>
         Contact = new OpenApiContact { Name = "CDN", Email = "support@example.com" }
     });
     // Include XML comments if generated
-    var xmlFiles = new[] {"WebApi.xml", "Core.xml", "Application.xml", "Infrastructure.xml"};
+    var xmlFiles = new[] {"Presentation.xml", "Domain.xml", "Application.xml", "Infrastructure.xml"};
     foreach (var f in xmlFiles)
     {
         var path = System.IO.Path.Combine(AppContext.BaseDirectory, f);

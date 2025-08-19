@@ -1,4 +1,4 @@
-using CDN.Freelancers.Core;
+using CDN.Freelancers.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace CDN.Freelancers.Infrastructure;
