@@ -37,6 +37,7 @@ input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
     <button type="submit">Save</button>
     <button type="button" id="resetBtn">Reset</button>
   </form>
+  <div id="error" class="error-box"><button aria-label="Dismiss" id="dismissError">✕</button><span id="errorMsg"></span></div>
 </section>
 <section>
   <h2>Search</h2>
@@ -48,7 +49,6 @@ input, textarea, button, select { padding:.5rem; margin:.25rem 0; }
 </section>
 <section>
   <h2>Freelancers</h2>
-  <div id="error" class="error-box"><button aria-label="Dismiss" id="dismissError">✕</button><span id="errorMsg"></span></div>
   <div id="list" class="flex"></div>
   <div id="pager" style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
     <button id="prevBtn">Prev</button>

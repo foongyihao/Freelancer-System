@@ -44,10 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
       hobbies: toList(document.getElementById('hobbies').value)
     };
     if(id){
-      clearError();
       await api(`/api/v1/freelancers/${id}`, { method:'PUT', body: JSON.stringify(payload) }).catch(()=>{});
     } else {
-      clearError();
       await api(`/api/v1/freelancers`, { method:'POST', body: JSON.stringify(payload) }).catch(()=>{});
     }
     resetForm();

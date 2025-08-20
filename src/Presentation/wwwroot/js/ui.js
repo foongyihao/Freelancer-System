@@ -5,8 +5,8 @@
 export function showError(message){
   const box = document.getElementById('error');
   const span = document.getElementById('errorMsg');
-  span.textContent = message;
   box.style.display = 'block';
+  span.textContent = message;
 }
 
 /**
@@ -33,7 +33,7 @@ export function clearError(){
  */
 import { handleAction } from './main.js';
 
-export function render(items){
+export function renderFreelancerCard(items){
   const list = document.getElementById('list');
   list.innerHTML='';
   (items||[]).forEach(f=> {

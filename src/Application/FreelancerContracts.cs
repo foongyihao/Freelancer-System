@@ -8,14 +8,11 @@ namespace CDN.Freelancers.Application;
 public interface IFreelancerRepository
 {
     Task<Freelancer?> GetAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<Freelancer>> GetAllAsync(bool includeArchived, CancellationToken ct = default);
     Task AddAsync(Freelancer freelancer, CancellationToken ct = default);
     Task UpdateAsync(Freelancer freelancer, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<Freelancer>> SearchAsync(string term, CancellationToken ct = default);
     Task ArchiveAsync(Guid id, bool archive, CancellationToken ct = default);
-    Task<PaginatedResult<Freelancer>> GetPagedAsync(int page, int pageSize, bool includeArchived, string? skillFilter = null, string? hobbyFilter = null, CancellationToken ct = default);
-    Task<PaginatedResult<Freelancer>> SearchPagedAsync(string term, int page, int pageSize, string? skillFilter = null, string? hobbyFilter = null, CancellationToken ct = default);
+    Task<PaginatedResult<Freelancer>> GetPagedAsync(int page, int pageSize, bool includeArchived, string? skillFilter = null, string? hobbyFilter = null, string? term = null, CancellationToken ct = default);
 }
 
 /// <summary>

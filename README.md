@@ -48,24 +48,25 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 
 This project follows the Clean Architecture principles, organizing code into layers with clear separation of concerns:
 
-1. **Domain Layer** - The core of the application:
+1. **Domain Layer**:
 
    - Contains business entities (Freelancer, Skillset, Hobby)
    - Has no dependencies on other layers or external frameworks
    - Defines the core business rules and data structures
-2. **Application Layer** - Business logic coordination:
+
+2. **Application Layer**:
 
    - Defines interfaces that the outer layers must implement
    - Contains use case logic and service interfaces
    - Depends only on the Domain layer
-   - The IFreelancerRepository interface defines how the application interacts with data storage
-3. **Infrastructure Layer** - External concerns implementation:
+   
+3. **Infrastructure Layer**:
 
    - Implements interfaces defined in the Application layer
    - Contains database context, repositories, and external service implementations
    - Depends on Application and Domain layers
-   - The FreelancerRepository provides the actual data persistence implementation
-4. **Presentation Layer** - User interface and API:
+   
+4. **Presentation Layer**:
 
    - Contains controllers, DTOs (Data Transfer Objects), and UI components
    - Depends on Application layer for business operations

@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { render, updatePager, clearError } from './ui.js';
+import { renderFreelancerCard, updatePager, clearError } from './ui.js';
 
 // State management variables (exported for read-only external use if needed)
 export let currentPage = 1;
@@ -19,9 +19,9 @@ export async function fetchFreelancers({ term, skill, hobby } = {}) {
   if (term !== undefined) currentSearch = term.trim();
   if (skill !== undefined) currentSkillFilter = skill.trim();
   if (hobby !== undefined) currentHobbyFilter = hobby.trim();
-
   const includeArchived = document.getElementById('showArchived').checked;
-  clearError();
+  
+  
   const q = new URLSearchParams();
   q.set('includeArchived', includeArchived);
   q.set('page', currentPage);
@@ -34,7 +34,7 @@ export async function fetchFreelancers({ term, skill, hobby } = {}) {
     .catch(()=>null);
   const items = data?.items || [];
   totalPages = data?.totalPages || 1;
-  render(items);
+  renderFreelancerCard(items);
   updatePager();
 }
 
