@@ -171,8 +171,4 @@ Current tests cover: add/get, search (via unified paged call), archive filter, p
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) builds and tests on every push / PR to `main`.
 
-Badge example (after pushing to GitHub replace <user>/<repo>):
-
-```
-![CI](https://github.com/<user>/<repo>/actions/workflows/ci.yml/badge.svg)
-```
+![CI](https://github.com/foongyihao/Freelancer-System/actions/workflows/ci.yml/badge.svg)
