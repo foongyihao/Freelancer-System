@@ -13,6 +13,9 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 ## Project Demo
 <img width="5088" height="3822" alt="image" src="https://github.com/user-attachments/assets/2b540b9c-022d-4624-ae76-f885568b0e90" />
 
+## Database Schema
+<img width="896" height="754" alt="image" src="https://github.com/user-attachments/assets/c2797b47-e8b5-4a3c-b622-1c3d644edb06" />
+This database schema models a system for managing freelancer information. Each freelancer has a unique identifier, a username, an email, a phone number, and a flag to indicate if their account is archived. A freelancer can have multiple skillsets and multiple hobbies. Each skillset and hobby is uniquely identified and linked to a specific freelancer through a foreign key, showing a one-to-many relationship where one freelancer can be associated with many skills and hobbies, but each skill or hobby belongs to only one freelancer.
 
 ## Project Layout
 
