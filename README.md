@@ -1,10 +1,10 @@
 # CDN Freelancers API & Simple Frontend
 
-Implementation of the basic requirements for the Backend .NET Developer Assessment (CRUD, search, archive, clean architecture, tests) plus an optional lightweight frontend.
+Implementation of the basic requirements for the Backend .NET Developer Assessment (CRUD, search, archive, clean architecture, tests) plus an optional lightweight frontend. Recently refactored to unify pagination & search into a single endpoint and simplify repository methods.
 
 ## Tech Stack
 
-- .NET 9 Minimal API + static HTML/JS (no framework) UI
+- .NET 9 ASP.NET Core (controllers) + static HTML/JS (no framework) UI
 - Clean Architecture style layering (Domain, Application, Infrastructure, Presentation)
 - EF Core (SQLite by default, optional InMemory)
 - xUnit unit tests
@@ -15,7 +15,7 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 ```
 ├── Application                     # Application layer: interfaces and business logic
 │   ├── Application.csproj          # Project file with dependencies
-│   └── FreelancerContracts.cs      # Interfaces & pagination + domain exceptions
+│   └── FreelancerContracts.cs      # Repository interface, PaginatedResult, exceptions
 ├── Domain                          # Domain layer: core business entities
 │   ├── Domain.csproj               # Project file with minimal dependencies
 │   ├── Freelancer.cs               # Freelancer aggregate root
@@ -97,7 +97,8 @@ Swagger: http://localhost:5000/swagger
 - Create & update (form auto-fills on Edit)
 - Archive / Unarchive
 - Delete
-- Search by username/email (wildcard contains)
+- Search by username/email (wildcard contains) combined with listing (single endpoint)
+- Pagination & filtering (skills, hobbies) in same unified endpoint
 
 ## Core API Endpoints
 
@@ -109,8 +110,18 @@ Swagger: http://localhost:5000/swagger
 | PUT    | /api/v1/freelancers/{id}                  | Replace (incl. skillsets/hobbies) |
 | PATCH  | /api/v1/freelancers/{id}                  | Partial update (archive toggle)   |
 | DELETE | /api/v1/freelancers/{id}                  | Delete                            |
-| GET    | /api/v1/freelancers/search?term=abc       | Wildcard search                   |
-| GET    | /api/v1/freelancers?term=abc              | Wildcard search (via query term)  |
+| GET    | /api/v1/freelancers?term=abc              | List + wildcard search (with paging & filters) |
+
+Query parameters (unified list/search):
+
+```
+term            (optional) case-insensitive substring for username/email
+includeArchived (bool, default false) include archived profiles
+page            (int, default 1) 1-based page number
+pageSize        (int, default 10, max 100) page size
+skill           (optional) substring match inside any skill name
+hobby           (optional) substring match inside any hobby name
+```
 
 Request body (POST/PUT):
 
@@ -150,4 +161,14 @@ Database schema is ensured via `EnsureCreated()` (good for demos). For productio
 dotnet test
 ```
 
-Current tests cover: add/get, search, archive filter.
+Current tests cover: add/get, search (via unified paged call), archive filter, pagination, filtering by skill/hobby, duplicates.
+
+## CI
+
+GitHub Actions workflow (`.github/workflows/ci.yml`) builds and tests on every push / PR to `main`.
+
+Badge example (after pushing to GitHub replace <user>/<repo>):
+
+```
+![CI](https://github.com/<user>/<repo>/actions/workflows/ci.yml/badge.svg)
+```
