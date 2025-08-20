@@ -10,6 +10,10 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 - xUnit unit tests
 - Swagger (Dev only)
 
+## Project Demo
+<img width="5088" height="3822" alt="image" src="https://github.com/user-attachments/assets/2b540b9c-022d-4624-ae76-f885568b0e90" />
+
+
 ## Project Layout
 
 ```
