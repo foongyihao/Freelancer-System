@@ -4,7 +4,7 @@
  * @param {string} act - Action identifier ('edit' | 'archive' | 'delete').
  * @returns {Promise<void>}
  */
-import { fetchFreelancers, refreshList, search, toList, currentPage, pageSize, currentSearch, currentSkillFilter, currentHobbyFilter } from './state.js';
+import { fetchFreelancers, refreshList, search, toList, currentPage, pageSize, currentSearch, currentSkillFilter, currentHobbyFilter, gotoPage, decPage, incPage, resetSearchFilters } from './state.js';
 import { api } from './api.js';
 import { resetForm, clearError } from './ui.js';
 
@@ -30,6 +30,15 @@ export async function handleAction(f, act){
   }
 }
 
+function refetchFreelancers() {
+	resetSearchFilters();
+	const termEl = document.getElementById('searchTerm'); if(termEl) termEl.value='';
+	const sk=document.getElementById('searchSkill'); if(sk) sk.value='';
+	const hb=document.getElementById('searchHobby'); if(hb) hb.value='';
+	gotoPage(1);
+	refreshList();
+}
+
 // Initialize event listeners when the DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
   // Form submit
@@ -49,22 +58,16 @@ document.addEventListener('DOMContentLoaded', function() {
       await api(`/api/v1/freelancers`, { method:'POST', body: JSON.stringify(payload) }).catch(()=>{});
     }
     resetForm();
-  refreshList();
+  	refreshList();
   });
 
   // Button event listeners
   document.getElementById('resetBtn').addEventListener('click', resetForm);
   document.getElementById('searchBtn').addEventListener('click', search);
-  document.getElementById('refreshBtn').addEventListener('click', ()=> { 
-    currentSearch=''; currentSkillFilter=''; currentHobbyFilter='';
-    document.getElementById('searchTerm').value='';
-    const sk=document.getElementById('searchSkill'); if(sk) sk.value='';
-    const hb=document.getElementById('searchHobby'); if(hb) hb.value='';
-    currentPage=1; refreshList(); 
-  });
-  document.getElementById('showArchived').addEventListener('change', ()=> { currentPage=1; currentSearch=''; refreshList(); });
-  document.getElementById('prevBtn').addEventListener('click', ()=> { if(currentPage>1){ currentPage--; refreshList(); }});
-  document.getElementById('nextBtn').addEventListener('click', ()=> { if(currentPage<totalPages){ currentPage++; refreshList(); }});
+  document.getElementById('refreshBtn').addEventListener('click', ()=> refetchFreelancers());
+  document.getElementById('showArchived').addEventListener('change', ()=> refetchFreelancers());
+  document.getElementById('prevBtn').addEventListener('click', ()=> { if(currentPage>1){ decPage(); refreshList(); }});
+  document.getElementById('nextBtn').addEventListener('click', ()=> { incPage(); refreshList(); });
   document.getElementById('dismissError').addEventListener('click', clearError);
 
   // Load initial data

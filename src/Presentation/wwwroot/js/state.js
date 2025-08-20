@@ -9,6 +9,13 @@ export let currentSearch = '';
 export let currentSkillFilter = '';
 export let currentHobbyFilter = '';
 
+// Helper mutation functions (avoid direct reassignment of ES module imported bindings in consumers)
+export function gotoPage(p){ currentPage = p; }
+export function decPage(){ if(currentPage>1) currentPage--; }
+export function incPage(){ if(currentPage<totalPages) currentPage++; }
+export function resetSearchFilters(){ currentSearch=''; currentSkillFilter=''; currentHobbyFilter=''; }
+export function setTotalPages(t){ totalPages = t; }
+
 /**
  * Load a page of freelancers from the API applying current search term and
  * archived filter, then render and update pagination UI.
@@ -33,7 +40,7 @@ export async function fetchFreelancers({ term, skill, hobby } = {}) {
   const data = await api(`/api/v1/freelancers?${q.toString()}`)
     .catch(()=>null);
   const items = data?.items || [];
-  totalPages = data?.totalPages || 1;
+  setTotalPages(data?.totalPages || 1);
   renderFreelancerCard(items);
   updatePager();
 }
