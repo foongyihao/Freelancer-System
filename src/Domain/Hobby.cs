@@ -1,7 +1,7 @@
 namespace CDN.Freelancers.Domain;
 
 /// <summary>
-/// A single hobby descriptor (e.g., "Chess", "Photography").
+/// Master hobby entity (e.g., "Chess", "Photography").
 /// </summary>
 public class Hobby
 {
@@ -11,12 +11,7 @@ public class Hobby
     public int Id { get; set; }
 
     /// <summary>
-    /// Hobby name / label.
+    /// Hobby name / label (unique).
     /// </summary>
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Owning freelancer's GUID foreign key.
-    /// </summary>
-    public Guid FreelancerId { get; set; }
 }

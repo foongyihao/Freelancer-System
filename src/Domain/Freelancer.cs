@@ -31,12 +31,12 @@ public class Freelancer
     public bool IsArchived { get; set; } = false;
 
     /// <summary>
-    /// Collection of skillset entries (one-to-many) describing technical capabilities.
+    /// Many-to-many link rows to associated skills.
     /// </summary>
-    public List<Skillset> Skillsets { get; set; } = new();
+    public List<Freelancer_Skillset> FreelancerSkillsets { get; set; } = new();
 
     /// <summary>
-    /// Collection of hobbies (one-to-many) for additional personal interests.
+    /// Many-to-many link rows to associated hobbies.
     /// </summary>
-    public List<Hobby> Hobbies { get; set; } = new();
+    public List<Freelancer_Hobby> FreelancerHobbies { get; set; } = new();
 }

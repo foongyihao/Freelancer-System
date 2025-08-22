@@ -22,13 +22,21 @@ public class FreelancerDbContext : DbContext
     /// </summary>
     public DbSet<Freelancer> Freelancers => Set<Freelancer>();
     /// <summary>
-    /// Set representing skills belonging to freelancers.
+    /// Master skills.
     /// </summary>
     public DbSet<Skillset> Skillsets => Set<Skillset>();
     /// <summary>
-    /// Set representing hobbies belonging to freelancers.
+    /// Master hobbies.
     /// </summary>
     public DbSet<Hobby> Hobbies => Set<Hobby>();
+    /// <summary>
+    /// Join table for Freelancer-Skillset (explicit entity)
+    /// </summary>
+    public DbSet<Freelancer_Skillset> FreelancerSkillsets => Set<Freelancer_Skillset>();
+    /// <summary>
+    /// Join table for Freelancer-Hobby (explicit entity)
+    /// </summary>
+    public DbSet<Freelancer_Hobby> FreelancerHobbies => Set<Freelancer_Hobby>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,21 +47,49 @@ public class FreelancerDbContext : DbContext
             e.Property(f => f.Username).IsRequired().HasMaxLength(100);
             e.Property(f => f.Email).IsRequired().HasMaxLength(200);
             e.Property(f => f.PhoneNumber).HasMaxLength(30);
-            e.HasMany(f => f.Skillsets).WithOne().HasForeignKey(s => s.FreelancerId).OnDelete(DeleteBehavior.Cascade);
-            e.HasMany(f => f.Hobbies).WithOne().HasForeignKey(h => h.FreelancerId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(f => f.Username).IsUnique();
             e.HasIndex(f => f.Email).IsUnique();
         });
-
-        // Configure Skillset entity
+        
+        // Configure Skillset entity (master)
         modelBuilder.Entity<Skillset>(e =>
         {
             e.Property(s => s.Name).IsRequired().HasMaxLength(100);
+            e.HasIndex(s => s.Name).IsUnique();
         });
-        // Configure Hobby entity
+        // Configure Hobby entity (master)
         modelBuilder.Entity<Hobby>(e =>
         {
             e.Property(h => h.Name).IsRequired().HasMaxLength(100);
+            e.HasIndex(h => h.Name).IsUnique();
+        });
+
+        // Configure explicit join entities
+    modelBuilder.Entity<Freelancer_Skillset>(e =>
+        {
+            e.ToTable("freelancer_skillcet");
+            e.HasKey(x => new { x.FreelancerId, x.SkillsetId });
+            e.HasOne(x => x.Freelancer)
+                .WithMany(f => f.FreelancerSkillsets)
+                .HasForeignKey(x => x.FreelancerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Skillset)
+        .WithMany()
+                .HasForeignKey(x => x.SkillsetId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<Freelancer_Hobby>(e =>
+        {
+            e.ToTable("freelancer_hobby");
+            e.HasKey(x => new { x.FreelancerId, x.HobbyId });
+            e.HasOne(x => x.Freelancer)
+                .WithMany(f => f.FreelancerHobbies)
+                .HasForeignKey(x => x.FreelancerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Hobby)
+        .WithMany()
+                .HasForeignKey(x => x.HobbyId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
