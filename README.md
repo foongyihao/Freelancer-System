@@ -32,9 +32,6 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 │   └── FreelancerContracts.cs      # Repository interface, PaginatedResult, exceptions
 ├── Domain                          # Domain layer: core business entities
 │   ├── Domain.csproj               # Project file with minimal dependencies
-│   ├── Freelancer.cs               # Freelancer aggregate root
-│   ├── Skillset.cs                 # Skillset value/entity
-│   └── Hobby.cs                    # Hobby value/entity
 ├── Infrastructure                  # Infrastructure layer: implementation of interfaces
 │   ├── FreelancerDbContext.cs      # EF Core database context
 │   ├── FreelancerRepository.cs     # Implementation of IFreelancerRepository
@@ -50,12 +47,8 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
     ├── appsettings.json              # Application configuration
     ├── freelancers.db                # SQLite database file
     └── wwwroot
-        ├── index.html              # Simple frontend HTML
-        └── js                      # Modularized JavaScript
-            ├── api.js              # API communication functions
-            ├── main.js             # Main application logic and event handlers
-            ├── state.js            # State management
-            └── ui.js               # UI rendering functions
+        ├── pages                     # HTML pages
+        └── feature                   # JavaScript for frontend functionality
 ```
 
 ### Clean Architecture Explanation
