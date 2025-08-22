@@ -44,15 +44,15 @@ public class FreelancersController : ControllerBase {
     /// A <see cref="Freelancer"/> instance populated with data from the request.
     /// </returns>
     private static Freelancer MapToModel(FreelancerRequest request, Guid? id = null) => new() {
-        Id = id ?? Guid.Empty, 
+        Id = id ?? Guid.Empty,
         Username = request.Username!,
         Email = request.Email!,
         PhoneNumber = request.PhoneNumber ?? string.Empty,
-        Skillsets = (request.Skillsets ?? new List<string>())
-            .Select(s => new Skillset { Name = s, FreelancerId = id ?? Guid.Empty })
+        FreelancerSkillsets = (request.Skillsets ?? new List<string>())
+            .Select(s => new Freelancer_Skillset { Skillset = new Skillset { Name = s } })
             .ToList(),
-        Hobbies = (request.Hobbies ?? new List<string>())
-            .Select(h => new Hobby { Name = h, FreelancerId = id ?? Guid.Empty })
+        FreelancerHobbies = (request.Hobbies ?? new List<string>())
+            .Select(h => new Freelancer_Hobby { Hobby = new Hobby { Name = h } })
             .ToList(),
         IsArchived = request.IsArchived
     };
@@ -100,7 +100,24 @@ public class FreelancersController : ControllerBase {
                 title: "Invalid paging parameters",
                 detail: "'page' must be >= 1 and 'pageSize' must be between 1 and 100.",
                 statusCode: StatusCodes.Status400BadRequest);
-        return Ok(await _repo.GetPagedAsync(page, pageSize, includeArchived, skill, hobby, term));
+        var result = await _repo.GetPagedAsync(page, pageSize, includeArchived, skill, hobby, term);
+        // Flatten joins to expected arrays for the frontend
+        var shaped = new {
+            totalCount = result.TotalCount,
+            page = result.Page,
+            pageSize = result.PageSize,
+            totalPages = result.TotalPages,
+            items = result.Items.Select(f => new {
+                id = f.Id,
+                username = f.Username,
+                email = f.Email,
+                phoneNumber = f.PhoneNumber,
+                isArchived = f.IsArchived,
+                skillsets = f.FreelancerSkillsets.Select(fs => new { name = fs.Skillset.Name }),
+                hobbies = f.FreelancerHobbies.Select(fh => new { name = fh.Hobby.Name })
+            })
+        };
+        return Ok(shaped);
     }
 
     /// <summary>
@@ -111,8 +128,18 @@ public class FreelancersController : ControllerBase {
     [ProducesResponseType(typeof(Freelancer), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetOne(Guid id) {
-        var f = await _repo.GetAsync(id);
-        return f is null ? NotFound() : Ok(f);
+    var f = await _repo.GetAsync(id);
+        if (f is null) return NotFound();
+        var shaped = new {
+            id = f.Id,
+            username = f.Username,
+            email = f.Email,
+            phoneNumber = f.PhoneNumber,
+            isArchived = f.IsArchived,
+            skillsets = f.FreelancerSkillsets.Select(fs => new { name = fs.Skillset.Name }),
+            hobbies = f.FreelancerHobbies.Select(fh => new { name = fh.Hobby.Name })
+        };
+        return Ok(shaped);
     }
 
     // Removed separate /search endpoint: unified via optional 'term' in GET
@@ -130,7 +157,8 @@ public class FreelancersController : ControllerBase {
     var model = MapToModel(request); // Id will be new Guid by constructor
     var dup = await ExecuteWithDuplicateHandling(() => _repo.AddAsync(model));
     if (dup != null) return dup;
-        return CreatedAtAction(nameof(GetOne), new { id = model.Id }, model);
+        var shaped = new { id = model.Id, username = model.Username, email = model.Email, phoneNumber = model.PhoneNumber, isArchived = model.IsArchived };
+        return CreatedAtAction(nameof(GetOne), new { id = model.Id }, shaped);
     }
 
     /// <summary>
