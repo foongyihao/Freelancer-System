@@ -135,12 +135,14 @@
         <div><label>Email<br><input id="email" type="email" required/></label></div>
         <div><label>Phone<br><input id="phone"/></label></div>
         <div>
+            <label>Skillsets<br><input id="skillsets" placeholder="C#,SQL"/></label>
             <div style="margin-top:.25rem;">
                 <label for="skillsSelect" style="display:block; font-size:.9rem; color:#444;">Choose skills:</label>
                 <select id="skillsSelect" multiple="multiple" size="6"></select>
             </div>
         </div>
         <div>
+            <label>Hobbies<br><input id="hobbies" placeholder="Chess,Reading"/></label>
             <div style="margin-top:.25rem;">
                 <label for="hobbiesSelect" style="display:block; font-size:.9rem; color:#444;">Choose hobbies:</label>
                 <select id="hobbiesSelect" multiple="multiple" size="6"></select>
@@ -159,11 +161,11 @@
         <input id="searchTerm" placeholder="search username/email"/>
     </div>
     <div style="margin-top:.25rem;">
-        <label for="skillsSelect" style="display:block; font-size:.9rem; color:#444;">Filter by skill(s):</label>
+        <label for="searchSkill" style="display:block; font-size:.9rem; color:#444;">Filter by skill(s):</label>
         <select id="searchSkill" multiple="multiple" size="6"></select>
     </div>
     <div style="margin-top:.25rem;">
-        <label for="skillsSelect" style="display:block; font-size:.9rem; color:#444;">Filter by hobby(s):</label>
+        <label for="searchHobby" style="display:block; font-size:.9rem; color:#444;">Filter by hobby(s):</label>
         <select id="searchHobby" multiple="multiple" size="6"></select>
     </div>
     <button id="searchBtn">Search</button>

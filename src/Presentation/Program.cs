@@ -57,10 +57,9 @@ builder.Services.AddControllers().AddJsonOptions(o => {
 // finalize service configuration
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Enable Swagger in all environments for local testing and easier diagnostics
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseDefaultFiles(); // Looks for index.html by default
 app.UseStaticFiles();  // Serves static files from wwwroot
@@ -77,6 +76,62 @@ using (var scope = app.Services.CreateScope()) {
         await conn.OpenAsync();
         try
         {
+            // --- Self-heal master tables that may have legacy FK columns from an older schema ---
+            async Task<bool> ColumnExistsAsync(string table, string column)
+            {
+                await using var check = conn.CreateCommand();
+                check.CommandText = $"PRAGMA table_info('{table}')";
+                await using var reader = await check.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    var name = reader.GetString(1); // cid, name, type, notnull, dflt_value, pk
+                    if (string.Equals(name, column, StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                return false;
+            }
+
+            // Rebuild Skillsets table if it incorrectly has a FreelancerId column (legacy 1..* design)
+            if (await ColumnExistsAsync("Skillsets", "FreelancerId"))
+            {
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+PRAGMA foreign_keys=off;
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS Skillsets_new (
+    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS IX_Skillsets_Name ON Skillsets_new (Name);
+INSERT INTO Skillsets_new (Id, Name)
+    SELECT Id, Name FROM Skillsets;
+DROP TABLE Skillsets;
+ALTER TABLE Skillsets_new RENAME TO Skillsets;
+COMMIT;
+PRAGMA foreign_keys=on;";
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Rebuild Hobbies table if it incorrectly has a FreelancerId column
+            if (await ColumnExistsAsync("Hobbies", "FreelancerId"))
+            {
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+PRAGMA foreign_keys=off;
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS Hobbies_new (
+    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS IX_Hobbies_Name ON Hobbies_new (Name);
+INSERT INTO Hobbies_new (Id, Name)
+    SELECT Id, Name FROM Hobbies;
+DROP TABLE Hobbies;
+ALTER TABLE Hobbies_new RENAME TO Hobbies;
+COMMIT;
+PRAGMA foreign_keys=on;";
+                await cmd.ExecuteNonQueryAsync();
+            }
+
             // Create freelancer_skillcet if missing
             await using (var cmd = conn.CreateCommand())
             {

@@ -1,6 +1,9 @@
+using System.Net;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using CDN.Freelancers.Domain;
 using CDN.Freelancers.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -19,6 +22,26 @@ public class HobbyTests
         var ctx = new FreelancerDbContext(options);
         ctx.Database.EnsureCreated();
         return (ctx, new FreelancerRepository(ctx), conn);
+    }
+
+    [Fact]
+    public async Task Create_Hobby_Via_Api_Returns_Created_And_Query_Shows_It()
+    {
+        await using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(b =>
+            {
+                b.UseSetting("UseSqlite", "false");
+                b.UseSetting("environment", "Development");
+            });
+
+        var client = factory.CreateClient();
+        var create = await client.PostAsJsonAsync("/api/v1/hobbies", new { Name = "Skiing" });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+
+        var list = await client.GetAsync("/api/v1/hobbies?term=Skiing");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var body = await list.Content.ReadAsStringAsync();
+        Assert.Contains("Skiing", body);
     }
 
     [Fact]

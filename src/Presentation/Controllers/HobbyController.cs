@@ -36,7 +36,7 @@ public class HobbyController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] NameDto dto)
+    public async Task<IActionResult> Create([FromBody] HobbyNameDto dto)
     {
         if (dto is null || string.IsNullOrWhiteSpace(dto.Name)) return Problem("Name is required", statusCode:400);
         var exists = await _ctx.Hobbies.AnyAsync(h => h.Name.ToLower() == dto.Name.ToLower());
@@ -47,10 +47,10 @@ public class HobbyController : ControllerBase
         return CreatedAtAction(nameof(Get), new { term = h.Name }, new { id = h.Id, name = h.Name });
     }
 
-    public record NameDto(string Name);
+    public record HobbyNameDto(string Name);
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] NameDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] HobbyNameDto dto)
     {
         var name = dto?.Name?.Trim();
         if (string.IsNullOrWhiteSpace(name)) return Problem("Name is required", statusCode:400);

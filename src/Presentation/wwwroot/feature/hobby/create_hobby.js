@@ -9,10 +9,10 @@ function wireCreateHobby(){
     const editId = input.dataset.editId;
     if(!name) return;
     if(editId){
-      await api(`/api/v1/hobbies/${editId}`, { method:'PUT', body: JSON.stringify({ name }) });
+      await api(`/api/v1/hobbies/${editId}`, { method:'PUT', body: JSON.stringify({ Name: name }) });
       delete input.dataset.editId;
     } else {
-      await api('/api/v1/hobbies', { method:'POST', body: JSON.stringify({ name }) });
+      await api('/api/v1/hobbies', { method:'POST', body: JSON.stringify({ Name: name }) });
     }
     input.value='';
     // reload list

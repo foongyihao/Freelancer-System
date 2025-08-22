@@ -36,7 +36,7 @@ public class SkillsetController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] NameDto dto)
+    public async Task<IActionResult> Create([FromBody] SkillNameDto dto)
     {
         if (dto is null || string.IsNullOrWhiteSpace(dto.Name)) return Problem("Name is required", statusCode:400);
         var exists = await _ctx.Skillsets.AnyAsync(s => s.Name.ToLower() == dto.Name.ToLower());
@@ -47,10 +47,10 @@ public class SkillsetController : ControllerBase
         return CreatedAtAction(nameof(Get), new { term = s.Name }, new { id = s.Id, name = s.Name });
     }
 
-    public record NameDto(string Name);
+    public record SkillNameDto(string Name);
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] NameDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] SkillNameDto dto)
     {
         var name = dto?.Name?.Trim();
         if (string.IsNullOrWhiteSpace(name)) return Problem("Name is required", statusCode:400);

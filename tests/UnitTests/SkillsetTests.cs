@@ -1,7 +1,10 @@
 using System.Linq;
+using System.Net;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using CDN.Freelancers.Domain;
 using CDN.Freelancers.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -20,6 +23,26 @@ public class SkillsetTests
         var ctx = new FreelancerDbContext(options);
         ctx.Database.EnsureCreated();
         return (ctx, new FreelancerRepository(ctx), conn);
+    }
+
+    [Fact]
+    public async Task Create_Skill_Via_Api_Returns_Created_And_Query_Shows_It()
+    {
+        await using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(b =>
+            {
+                b.UseSetting("UseSqlite", "false");
+                b.UseSetting("environment", "Development");
+            });
+
+        var client = factory.CreateClient();
+        var create = await client.PostAsJsonAsync("/api/v1/skills", new { Name = "Rust" });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+
+        var list = await client.GetAsync("/api/v1/skills?term=Rust");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var body = await list.Content.ReadAsStringAsync();
+        Assert.Contains("Rust", body);
     }
 
     [Fact]
