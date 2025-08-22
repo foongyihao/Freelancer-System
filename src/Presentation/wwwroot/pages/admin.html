@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Admin - Skills & Hobbies</title>
+<style>
+body { font-family: system-ui, Arial, sans-serif; margin: 2rem; }
+section { margin-top:1.5rem; }
+input, button { padding:.5rem; }
+.grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:1rem; }
+.card { border:1px solid #ccc; padding:1rem; border-radius:8px; }
+.toolbar { display:flex; gap:.5rem; align-items:center; margin:.5rem 0; }
+</style>
+</head>
+<body>
+<div style="display:flex; align-items:center; gap:1rem;">
+  <a href="/pages/freelancer.html" style="padding:.4rem .7rem; border:1px solid #888; border-radius:6px; text-decoration:none; color:#333;">← Back</a>
+  <h1 style="margin:0;">Admin - Master Data</h1>
+</div>
+<p>Create skills and hobbies here, then use their names when creating freelancers.</p>
+
+<section>
+  <h2>Skills</h2>
+  <div class="toolbar">
+    <input id="skillsTerm" placeholder="Search skills" />
+    <button id="skillsSearch" class="pill">Search</button>
+    <input id="skillName" placeholder="e.g. C#" />
+    <button id="addSkill" class="pill">Add Skill</button>
+  </div>
+  <div class="grid" id="skillsGrid"></div>
+  <div class="toolbar"><button id="skillsPrev">Prev</button><span id="skillsPageInfo"></span><button id="skillsNext">Next</button></div>
+</section>
+
+<section>
+  <h2>Hobbies</h2>
+  <div class="toolbar">
+    <input id="hobbiesTerm" placeholder="Search hobbies" />
+    <button id="hobbiesSearch" class="pill">Search</button>
+    <input id="hobbyName" placeholder="e.g. Chess" />
+    <button id="addHobby" class="pill">Add Hobby</button>
+  </div>
+  <div class="grid" id="hobbiesGrid"></div>
+  <div class="toolbar"><button id="hobbiesPrev">Prev</button><span id="hobbiesPageInfo"></span><button id="hobbiesNext">Next</button></div>
+</section>
+
+<!-- External JS modules (no inline logic) -->
+<script type="module" src="/ui/ui.js"></script>
+<script type="module" src="/feature/skillset/navigate_skillset.js"></script>
+<script type="module" src="/feature/skillset/create_skillset.js"></script>
+<script type="module" src="/feature/hobby/navigate_hobby.js"></script>
+<script type="module" src="/feature/hobby/create_hobby.js"></script>
+</body>
+</html>

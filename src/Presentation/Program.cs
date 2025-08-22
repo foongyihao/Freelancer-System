@@ -3,6 +3,7 @@ using CDN.Freelancers.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using CDN.Freelancers.Domain;
+using System.Data;
 
 
 // Create the web application builder (entry point for ASP.NET Core apps)
@@ -69,6 +70,57 @@ app.MapControllers(); // Maps controller routes
 using (var scope = app.Services.CreateScope()) {
     var db = scope.ServiceProvider.GetRequiredService<FreelancerDbContext>();
     db.Database.EnsureCreated();
+    // Ensure join tables exist when using SQLite (helps when DB file predates schema change)
+    if (db.Database.IsSqlite())
+    {
+        var conn = db.Database.GetDbConnection();
+        await conn.OpenAsync();
+        try
+        {
+            // Create freelancer_skillcet if missing
+            await using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='freelancer_skillcet'";
+                var exists = await cmd.ExecuteScalarAsync();
+                if (exists is null)
+                {
+                    await using var create = conn.CreateCommand();
+                    create.CommandText = @"
+CREATE TABLE IF NOT EXISTS freelancer_skillcet (
+    FreelancerId TEXT NOT NULL,
+    SkillsetId INTEGER NOT NULL,
+    PRIMARY KEY (FreelancerId, SkillsetId),
+    FOREIGN KEY (FreelancerId) REFERENCES Freelancers (Id) ON DELETE CASCADE,
+    FOREIGN KEY (SkillsetId) REFERENCES Skillsets (Id) ON DELETE CASCADE
+);";
+                    await create.ExecuteNonQueryAsync();
+                }
+            }
+            // Create freelancer_hobby if missing
+            await using (var cmd2 = conn.CreateCommand())
+            {
+                cmd2.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='freelancer_hobby'";
+                var exists2 = await cmd2.ExecuteScalarAsync();
+                if (exists2 is null)
+                {
+                    await using var create2 = conn.CreateCommand();
+                    create2.CommandText = @"
+CREATE TABLE IF NOT EXISTS freelancer_hobby (
+    FreelancerId TEXT NOT NULL,
+    HobbyId INTEGER NOT NULL,
+    PRIMARY KEY (FreelancerId, HobbyId),
+    FOREIGN KEY (FreelancerId) REFERENCES Freelancers (Id) ON DELETE CASCADE,
+    FOREIGN KEY (HobbyId) REFERENCES Hobbies (Id) ON DELETE CASCADE
+);";
+                    await create2.ExecuteNonQueryAsync();
+                }
+            }
+        }
+        finally
+        {
+            await conn.CloseAsync();
+        }
+    }
 }
 
 // Starts the ASP.NET Core application and begins listening for incoming HTTP requests

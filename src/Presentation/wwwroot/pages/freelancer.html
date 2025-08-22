@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>CDN Freelancers</title>
+    <style>
+        body {
+            font-family: system-ui, Arial, sans-serif;
+            margin: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        section {
+            margin-top: 1.5rem;
+        }
+
+        input, textarea, button, select {
+            padding: .5rem;
+            margin: .25rem 0;
+        }
+
+        #freelancers tbody tr.archived {
+            background: #f5d7d7;
+        }
+
+        .badge {
+            background: #1976d2;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: .75rem;
+            margin-right: 4px;
+            display: inline-block;
+        }
+
+        .hobbies .badge {
+            background: #9c27b0;
+        }
+
+        .flex {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            border: 1px solid #ccc;
+            padding: 1rem;
+            border-radius: 8px;
+            width: 320px;
+            position: relative;
+        }
+
+        .card .arch {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: .7rem;
+            background: #444;
+            color: #fff;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .error-box {
+            display: none;
+            background: #fdecea;
+            color: #611a15;
+            border: 1px solid #f5c6cb;
+            padding: .75rem 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .error-box button {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            background: none;
+            border: none;
+            color: #611a15;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .picker {
+            border: 1px dashed #ccc;
+            padding: .5rem;
+            border-radius: 6px;
+            margin-top: .25rem;
+        }
+
+        .picker-header {
+            display: flex;
+            gap: .5rem;
+            align-items: center;
+            margin-bottom: .5rem;
+        }
+
+        .picker-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+        }
+
+        .picker-pager {
+            display: flex;
+            gap: .5rem;
+            align-items: center;
+            margin-top: .5rem;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>CDN Freelancers</h1>
+    <div>
+        <label><input type="checkbox" id="showArchived"/> Show Archived</label>
+        <a href="/pages/admin.html" id="adminBtn"
+           style="margin-left:1rem; padding:.5rem .75rem; background:#1976d2; color:#fff; border-radius:6px; text-decoration:none;">Manage
+            Skills & Hobbies</a>
+    </div>
+</header>
+<section>
+    <h2>Create / Edit</h2>
+    <form id="freelancerForm">
+        <input type="hidden" id="freelancerId"/>
+        <div><label>Username<br><input id="username" required/></label></div>
+        <div><label>Email<br><input id="email" type="email" required/></label></div>
+        <div><label>Phone<br><input id="phone"/></label></div>
+        <div>
+            <div style="margin-top:.25rem;">
+                <label for="skillsSelect" style="display:block; font-size:.9rem; color:#444;">Choose skills:</label>
+                <select id="skillsSelect" multiple="multiple" size="6"></select>
+            </div>
+        </div>
+        <div>
+            <div style="margin-top:.25rem;">
+                <label for="hobbiesSelect" style="display:block; font-size:.9rem; color:#444;">Choose hobbies:</label>
+                <select id="hobbiesSelect" multiple="multiple" size="6"></select>
+            </div>
+        </div>
+        <button type="submit">Save</button>
+        <button type="button" id="resetBtn">Reset</button>
+    </form>
+    <div id="error" class="error-box">
+        <button aria-label="Dismiss" id="dismissError">✕</button>
+        <span id="errorMsg"></span></div>
+</section>
+<section>
+    <h2>Search</h2>
+    <div>
+        <input id="searchTerm" placeholder="search username/email"/>
+    </div>
+    <div style="margin-top:.25rem;">
+        <label for="skillsSelect" style="display:block; font-size:.9rem; color:#444;">Filter by skill(s):</label>
+        <select id="searchSkill" multiple="multiple" size="6"></select>
+    </div>
+    <div style="margin-top:.25rem;">
+        <label for="skillsSelect" style="display:block; font-size:.9rem; color:#444;">Filter by hobby(s):</label>
+        <select id="searchHobby" multiple="multiple" size="6"></select>
+    </div>
+    <button id="searchBtn">Search</button>
+    <button id="refreshBtn">All</button>
+</section>
+<section>
+    <h2>Freelancers</h2>
+    <div id="list" class="flex"></div>
+    <div id="pager" style="margin-top:1rem; display:flex; gap:.5rem; align-items:center;">
+        <button id="prevBtn">Prev</button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn">Next</button>
+    </div>
+</section>
+</body>
+<!-- External JS modules (no inline logic) -->
+<script type="module" src="/ui/ui.js"></script>
+<script type="module" src="/feature/freelancer/state_freelancer.js"></script>
+<script type="module" src="/feature/freelancer/navigate_freelancer.js"></script>
+<script type="module" src="/feature/freelancer/create_freelancer.js"></script>
+</html>
