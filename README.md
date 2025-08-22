@@ -12,14 +12,18 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 
 ## Project Demo
 <img width="5088" height="3822" alt="image" src="https://github.com/user-attachments/assets/2b540b9c-022d-4624-ae76-f885568b0e90" />
+<img width="5088" height="3356" alt="image" src="https://github.com/user-attachments/assets/7a0e3a2b-14f5-4144-8e51-9f0d3dea4427" />
 
 ## Database Schema
-- Each freelancer has a unique identifier, a username, an email, a phone number, and a flag to indicate if their account is archived. 
-- A freelancer can have multiple skillsets and multiple hobbies. 
-- Each skillset and hobby is uniquely identified and linked to a specific freelancer through a foreign key, showing a one-to-many relationship where one freelancer can be associated with many skills and hobbies, but each skill or hobby belongs to only one freelancer.
+- The Freelancer entity stores core information such as ID, username, email, phone number, and archive status.
+- A Skillset entity maintains unique identifiers and names for each skill.
+- Freelancers are connected to skills through the Freelancer\_Skillset linking entity, enabling many-to-many relationships.
+- A Hobby entity stores unique identifiers and names for each hobby.
+- Freelancers are connected to hobbies through the Freelancer\_Hobby linking entity, also allowing many-to-many relationships.
+
   
 <p align="center">
-	<img width="448" height="377" alt="image" src="https://github.com/user-attachments/assets/d6cd9f82-cd45-4b24-81ec-f2a5f0f96732" />
+	<img width="643" height="372" alt="image" src="https://github.com/user-attachments/assets/f4259be9-0781-4a6e-a85f-79ce804bbabf" />
 </p>
 
 
