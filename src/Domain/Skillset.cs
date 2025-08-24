@@ -1,14 +1,13 @@
 namespace CDN.Freelancers.Domain;
 
 /// <summary>
-/// Master skill entity (e.g., "C#", "SQL", "React").
+/// Master skill entity (e.g., "C#", "SQL", "React"). Unique by Name.
 /// </summary>
-public class Skillset
-{
+public class Skillset {
     /// <summary>
-    /// Surrogate integer primary key.
+    /// Surrogate GUID primary key.
     /// </summary>
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     /// <summary>
     /// Skill name / label (unique).

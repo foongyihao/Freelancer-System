@@ -1,5 +1,6 @@
 using CDN.Freelancers.Application;
 using CDN.Freelancers.Domain;
+using CDN.Freelancers.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace CDN.Freelancers.Infrastructure;
@@ -9,8 +10,7 @@ namespace CDN.Freelancers.Infrastructure;
 /// and querying <see cref="Freelancer"/> aggregates including their child collections
 /// (<see cref="Skillset"/> and <see cref="Hobby"/>).
 /// </summary>
-public class FreelancerRepository : IFreelancerRepository
-{
+public class FreelancerRepository : IFreelancerRepository {
     private readonly FreelancerDbContext _ctx;
     /// <summary>
     /// Creates a repository instance bound to a specific <see cref="FreelancerDbContext"/>.
@@ -18,21 +18,35 @@ public class FreelancerRepository : IFreelancerRepository
     public FreelancerRepository(FreelancerDbContext ctx) => _ctx = ctx;
 
     /// <inheritdoc />
-    public async Task AddAsync(Freelancer freelancer, CancellationToken ct = default)
-    {
+    public async Task AddAsync(Freelancer freelancer, CancellationToken ct = default) {
         // Duplicate check (username/email uniqueness)
-        var exists = await _ctx.Freelancers.AnyAsync(f => f.Username == freelancer.Username || f.Email == freelancer.Email, ct);
-        if (exists) throw new DuplicateFreelancerException("Username or Email already exists.");
+    var exists = await _ctx.Freelancers.AnyAsync(f => f.Username == freelancer.Username || f.Email == freelancer.Email, ct);
+    if (exists) throw new DuplicateRecordException(nameof(Freelancer), $"{freelancer.Username}/{freelancer.Email}", "Username or Email already exists.");
 
         freelancer.PhoneNumber ??= string.Empty;
         if (freelancer.Id == Guid.Empty) freelancer.Id = Guid.NewGuid();
 
-        // Resolve join collections from provided names (create masters if missing)
-        var desiredSkillNames = (freelancer.FreelancerSkillsets ?? new()).Select(x => x.Skillset?.Name?.Trim() ?? string.Empty).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var desiredHobbyNames = (freelancer.FreelancerHobbies ?? new()).Select(x => x.Hobby?.Name?.Trim() ?? string.Empty).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-
-        var skills = await ResolveSkillsAsync(desiredSkillNames, ct);
-        var hobbies = await ResolveHobbiesAsync(desiredHobbyNames, ct);
+        // Resolve join collections: prefer ids if they were mapped onto the aggregate; otherwise use names
+        List<Skillset> skills;
+        List<Hobby> hobbies;
+        var desiredSkillIds = (freelancer.FreelancerSkillsets ?? new()).Select(x => x.SkillsetId).Where(id => id != Guid.Empty).Distinct().ToList();
+        var desiredHobbyIds = (freelancer.FreelancerHobbies ?? new()).Select(x => x.HobbyId).Where(id => id != Guid.Empty).Distinct().ToList();
+        if (desiredSkillIds.Count > 0) {
+            skills = await _ctx.Skillsets.Where(s => desiredSkillIds.Contains(s.Id)).ToListAsync(ct);
+        }
+        else {
+            var desiredSkillNames = (freelancer.FreelancerSkillsets ?? new()).Select(x => x.Skillset?.Name?.Trim() ?? string.Empty)
+                .Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            skills = await ResolveSkillsAsync(desiredSkillNames, ct);
+        }
+        if (desiredHobbyIds.Count > 0) {
+            hobbies = await _ctx.Hobbies.Where(h => desiredHobbyIds.Contains(h.Id)).ToListAsync(ct);
+        }
+        else {
+            var desiredHobbyNames = (freelancer.FreelancerHobbies ?? new()).Select(x => x.Hobby?.Name?.Trim() ?? string.Empty)
+                .Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            hobbies = await ResolveHobbiesAsync(desiredHobbyNames, ct);
+        }
 
         freelancer.FreelancerSkillsets = skills.Select(s => new Freelancer_Skillset { FreelancerId = freelancer.Id, SkillsetId = s.Id }).ToList();
         freelancer.FreelancerHobbies = hobbies.Select(h => new Freelancer_Hobby { FreelancerId = freelancer.Id, HobbyId = h.Id }).ToList();
@@ -77,18 +91,39 @@ public class FreelancerRepository : IFreelancerRepository
             .FirstOrDefaultAsync(f=>f.Id==freelancer.Id, ct);
         if (existing == null) return;
 
-        var duplicate = await _ctx.Freelancers.AnyAsync(f => f.Id != freelancer.Id && (f.Username == freelancer.Username || f.Email == freelancer.Email), ct);
-        if (duplicate) throw new DuplicateFreelancerException("Username or Email already exists.");
+    var duplicate = await _ctx.Freelancers.AnyAsync(f => f.Id != freelancer.Id && (f.Username == freelancer.Username || f.Email == freelancer.Email), ct);
+    if (duplicate) throw new DuplicateRecordException(nameof(Freelancer), $"{freelancer.Username}/{freelancer.Email}", "Username or Email already exists.");
 
         existing.Username = freelancer.Username;
         existing.Email = freelancer.Email;
         existing.PhoneNumber = freelancer.PhoneNumber ?? string.Empty;
         existing.IsArchived = freelancer.IsArchived;
 
-        var desiredSkillNames = (freelancer.FreelancerSkillsets ?? new()).Select(x => x.Skillset?.Name?.Trim() ?? string.Empty).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var desiredHobbyNames = (freelancer.FreelancerHobbies ?? new()).Select(x => x.Hobby?.Name?.Trim() ?? string.Empty).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var skills = await ResolveSkillsAsync(desiredSkillNames, ct);
-        var hobbies = await ResolveHobbiesAsync(desiredHobbyNames, ct);
+        // Resolve desired from ids first, else names
+        List<Skillset> skills;
+        List<Hobby> hobbies;
+        var desiredSkillIds = (freelancer.FreelancerSkillsets ?? new()).Select(x => x.SkillsetId).Where(id => id != Guid.Empty).Distinct().ToList();
+        var desiredHobbyIds = (freelancer.FreelancerHobbies ?? new()).Select(x => x.HobbyId).Where(id => id != Guid.Empty).Distinct().ToList();
+        if (desiredSkillIds.Count > 0)
+        {
+            skills = await _ctx.Skillsets.Where(s => desiredSkillIds.Contains(s.Id)).ToListAsync(ct);
+        }
+        else
+        {
+            var desiredSkillNames = (freelancer.FreelancerSkillsets ?? new()).Select(x => x.Skillset?.Name?.Trim() ?? string.Empty)
+                .Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            skills = await ResolveSkillsAsync(desiredSkillNames, ct);
+        }
+        if (desiredHobbyIds.Count > 0)
+        {
+            hobbies = await _ctx.Hobbies.Where(h => desiredHobbyIds.Contains(h.Id)).ToListAsync(ct);
+        }
+        else
+        {
+            var desiredHobbyNames = (freelancer.FreelancerHobbies ?? new()).Select(x => x.Hobby?.Name?.Trim() ?? string.Empty)
+                .Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            hobbies = await ResolveHobbiesAsync(desiredHobbyNames, ct);
+        }
 
         // Replace join rows
         _ctx.FreelancerSkillsets.RemoveRange(existing.FreelancerSkillsets);

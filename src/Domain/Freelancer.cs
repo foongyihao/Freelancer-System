@@ -1,10 +1,10 @@
 namespace CDN.Freelancers.Domain;
 
 /// <summary>
-/// Represents a registered freelancer profile including related skillsets and hobbies.
+/// Aggregate root representing a freelancer profile, including basic contact info
+/// and many-to-many relationships to master Skillset and Hobby entities via join tables.
 /// </summary>
-public class Freelancer
-{
+public class Freelancer {
     /// <summary>
     /// Unique identifier (GUID) for the freelancer.
     /// </summary>
@@ -29,14 +29,13 @@ public class Freelancer
     /// Indicates whether the freelancer has been archived (excluded by default from list queries).
     /// </summary>
     public bool IsArchived { get; set; } = false;
-
     /// <summary>
-    /// Many-to-many link rows to associated skills.
+    /// Many-to-many link rows to associated skills (join entity rows).
     /// </summary>
     public List<Freelancer_Skillset> FreelancerSkillsets { get; set; } = new();
 
     /// <summary>
-    /// Many-to-many link rows to associated hobbies.
+    /// Many-to-many link rows to associated hobbies (join entity rows).
     /// </summary>
     public List<Freelancer_Hobby> FreelancerHobbies { get; set; } = new();
 }

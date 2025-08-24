@@ -15,8 +15,12 @@ public class FreelancerRequest
 	public string? PhoneNumber { get; set; }
 	/// <summary>Indicates whether the freelancer request is archived.</summary>
 	public bool IsArchived { get; set; } = false;
-	/// <summary>List of skill names (each becomes a <c>Skillset</c> child entity).</summary>
+	/// <summary>List of skill names (legacy input, still supported).</summary>
 	public List<string>? Skillsets { get; set; }
-	/// <summary>List of hobby names (each becomes a <c>Hobby</c> child entity).</summary>
+	/// <summary>List of hobby names (legacy input, still supported).</summary>
 	public List<string>? Hobbies { get; set; }
+	/// <summary>Preferred: list of Skillset ids to attach.</summary>
+	public List<Guid>? SkillsetIds { get; set; }
+	/// <summary>Preferred: list of Hobby ids to attach.</summary>
+	public List<Guid>? HobbyIds { get; set; }
 }

@@ -3,16 +3,23 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using CDN.Freelancers.Application;
 using CDN.Freelancers.Domain;
+using CDN.Freelancers.Domain.Exceptions;
 using CDN.Freelancers.Presentation.Requests;
+using CDN.Freelancers.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace CDN.Freelancers.Presentation.Controllers;
 
+/// <summary>
+/// Represents a freelancer record in the system.
+/// </summary>
 [ApiController]
 [Route("api/v1/freelancers")]
 [Produces("application/json")]
-public class FreelancersController : ControllerBase {
+public class FreelancerController : ControllerBase {
     private readonly IFreelancerRepository _repo;
-    public FreelancersController(IFreelancerRepository repo) => _repo = repo;
+    private readonly FreelancerDbContext _ctx;
+    public FreelancerController(IFreelancerRepository repo, FreelancerDbContext ctx) { _repo = repo; _ctx = ctx; }
 
     /// <summary>
     /// Validates the <see cref="FreelancerRequest"/> for required fields.
@@ -43,37 +50,54 @@ public class FreelancersController : ControllerBase {
     /// <returns>
     /// A <see cref="Freelancer"/> instance populated with data from the request.
     /// </returns>
-    private static Freelancer MapToModel(FreelancerRequest request, Guid? id = null) => new() {
-        Id = id ?? Guid.Empty,
-        Username = request.Username!,
-        Email = request.Email!,
-        PhoneNumber = request.PhoneNumber ?? string.Empty,
-        FreelancerSkillsets = (request.Skillsets ?? new List<string>())
-            .Select(s => new Freelancer_Skillset { Skillset = new Skillset { Name = s } })
-            .ToList(),
-        FreelancerHobbies = (request.Hobbies ?? new List<string>())
-            .Select(h => new Freelancer_Hobby { Hobby = new Hobby { Name = h } })
-            .ToList(),
-        IsArchived = request.IsArchived
-    };
+    private static Freelancer MapToModel(FreelancerRequest request, Guid? id = null)
+    {
+        var model = new Freelancer
+        {
+            Id = id ?? Guid.Empty,
+            Username = request.Username!,
+            Email = request.Email!,
+            PhoneNumber = request.PhoneNumber ?? string.Empty,
+            IsArchived = request.IsArchived
+        };
 
-    /// <summary>
-    /// Executes the provided asynchronous action and handles <see cref="DuplicateFreelancerException"/>.
-    /// Returns a <see cref="ProblemDetails"/> with a 409 Conflict status if a duplicate is detected; otherwise, returns null.
-    /// </summary>
-    /// <param name="action">The asynchronous action to execute.</param>
-    /// <returns>
-    /// An <see cref="IActionResult"/> with error details if a duplicate is found, or null if successful.
-    /// </returns>
-    private async Task<IActionResult?> ExecuteWithDuplicateHandling(Func<Task> action) {
-        try {
-            await action();
-            return null;
+        // Prefer IDs if provided; otherwise map from names (legacy)
+        if (request.SkillsetIds != null && request.SkillsetIds.Count > 0)
+        {
+            model.FreelancerSkillsets = request.SkillsetIds
+                .Where(g => g != Guid.Empty)
+                .Distinct()
+                .Select(g => new Freelancer_Skillset { SkillsetId = g })
+                .ToList();
         }
-        catch (DuplicateFreelancerException ex) {
-            return Problem(title: "Duplicate freelancer", detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
+        else
+        {
+            model.FreelancerSkillsets = (request.Skillsets ?? new List<string>())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => new Freelancer_Skillset { Skillset = new Skillset { Name = s } })
+                .ToList();
         }
+
+        if (request.HobbyIds != null && request.HobbyIds.Count > 0)
+        {
+            model.FreelancerHobbies = request.HobbyIds
+                .Where(g => g != Guid.Empty)
+                .Distinct()
+                .Select(g => new Freelancer_Hobby { HobbyId = g })
+                .ToList();
+        }
+        else
+        {
+            model.FreelancerHobbies = (request.Hobbies ?? new List<string>())
+                .Where(h => !string.IsNullOrWhiteSpace(h))
+                .Select(h => new Freelancer_Hobby { Hobby = new Hobby { Name = h } })
+                .ToList();
+        }
+
+        return model;
     }
+
+    // Global exception handling via ProblemDetails now maps DuplicateFreelancerException -> HTTP 409.
 
     /// <summary>
     /// List freelancers with pagination (non-archived by default).
@@ -113,8 +137,8 @@ public class FreelancersController : ControllerBase {
                 email = f.Email,
                 phoneNumber = f.PhoneNumber,
                 isArchived = f.IsArchived,
-                skillsets = f.FreelancerSkillsets.Select(fs => new { name = fs.Skillset.Name }),
-                hobbies = f.FreelancerHobbies.Select(fh => new { name = fh.Hobby.Name })
+                skillsets = f.FreelancerSkillsets.Select(fs => new { id = fs.Skillset.Id, name = fs.Skillset.Name }),
+                hobbies = f.FreelancerHobbies.Select(fh => new { id = fh.Hobby.Id, name = fh.Hobby.Name })
             })
         };
         return Ok(shaped);
@@ -136,8 +160,8 @@ public class FreelancersController : ControllerBase {
             email = f.Email,
             phoneNumber = f.PhoneNumber,
             isArchived = f.IsArchived,
-            skillsets = f.FreelancerSkillsets.Select(fs => new { name = fs.Skillset.Name }),
-            hobbies = f.FreelancerHobbies.Select(fh => new { name = fh.Hobby.Name })
+            skillsets = f.FreelancerSkillsets.Select(fs => new { id = fs.Skillset.Id, name = fs.Skillset.Name }),
+            hobbies = f.FreelancerHobbies.Select(fh => new { id = fh.Hobby.Id, name = fh.Hobby.Name })
         };
         return Ok(shaped);
     }
@@ -152,11 +176,24 @@ public class FreelancersController : ControllerBase {
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] FreelancerRequest request) {
-    var validation = ValidateFreelancerRequest(request);
-    if (validation != null) return validation;
+        var validation = ValidateFreelancerRequest(request);
+        if (validation != null) return validation;
+        // Enforce IDs-only for skills/hobbies
+        if ((request.Skillsets != null && request.Skillsets.Count > 0) || (request.Hobbies != null && request.Hobbies.Count > 0))
+            return Problem(title: "Invalid payload", detail: "Use skillsetIds and hobbyIds; names are not allowed.", statusCode: StatusCodes.Status400BadRequest);
+        // If ids provided, ensure all exist
+        if (request.SkillsetIds != null && request.SkillsetIds.Count > 0) {
+            var ids = request.SkillsetIds.Where(g => g != Guid.Empty).Distinct().ToList();
+            var count = await _ctx.Skillsets.CountAsync(s => ids.Contains(s.Id));
+            if (count != ids.Count) return Problem(title: "Invalid skill ids", detail: "One or more skill ids do not exist.", statusCode: StatusCodes.Status400BadRequest);
+        }
+        if (request.HobbyIds != null && request.HobbyIds.Count > 0) {
+            var ids = request.HobbyIds.Where(g => g != Guid.Empty).Distinct().ToList();
+            var count = await _ctx.Hobbies.CountAsync(h => ids.Contains(h.Id));
+            if (count != ids.Count) return Problem(title: "Invalid hobby ids", detail: "One or more hobby ids do not exist.", statusCode: StatusCodes.Status400BadRequest);
+        }
     var model = MapToModel(request); // Id will be new Guid by constructor
-    var dup = await ExecuteWithDuplicateHandling(() => _repo.AddAsync(model));
-    if (dup != null) return dup;
+    await _repo.AddAsync(model);
         var shaped = new { id = model.Id, username = model.Username, email = model.Email, phoneNumber = model.PhoneNumber, isArchived = model.IsArchived };
         return CreatedAtAction(nameof(GetOne), new { id = model.Id }, shaped);
     }
@@ -170,13 +207,24 @@ public class FreelancersController : ControllerBase {
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(Guid id, [FromBody] FreelancerRequest request) {
-    var existing = await _repo.GetAsync(id);
-    if (existing == null) return NotFound();
-    var validation = ValidateFreelancerRequest(request);
-    if (validation != null) return validation;
+        var existing = await _repo.GetAsync(id);
+        if (existing == null) return NotFound();
+        var validation = ValidateFreelancerRequest(request);
+        if (validation != null) return validation;
+        if ((request.Skillsets != null && request.Skillsets.Count > 0) || (request.Hobbies != null && request.Hobbies.Count > 0))
+            return Problem(title: "Invalid payload", detail: "Use skillsetIds and hobbyIds; names are not allowed.", statusCode: StatusCodes.Status400BadRequest);
+        if (request.SkillsetIds != null && request.SkillsetIds.Count > 0) {
+            var ids = request.SkillsetIds.Where(g => g != Guid.Empty).Distinct().ToList();
+            var count = await _ctx.Skillsets.CountAsync(s => ids.Contains(s.Id));
+            if (count != ids.Count) return Problem(title: "Invalid skill ids", detail: "One or more skill ids do not exist.", statusCode: StatusCodes.Status400BadRequest);
+        }
+        if (request.HobbyIds != null && request.HobbyIds.Count > 0) {
+            var ids = request.HobbyIds.Where(g => g != Guid.Empty).Distinct().ToList();
+            var count = await _ctx.Hobbies.CountAsync(h => ids.Contains(h.Id));
+            if (count != ids.Count) return Problem(title: "Invalid hobby ids", detail: "One or more hobby ids do not exist.", statusCode: StatusCodes.Status400BadRequest);
+        }
     var model = MapToModel(request, id);
-    var dup = await ExecuteWithDuplicateHandling(() => _repo.UpdateAsync(model));
-    if (dup != null) return dup;
+    await _repo.UpdateAsync(model);
         return NoContent();
     }
 

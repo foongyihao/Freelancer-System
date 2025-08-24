@@ -42,7 +42,7 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 │   └── Infrastructure.csproj       # Project file with dependencies on EF Core
 └── Presentation                    # Presentation layer: API controllers and UI
     ├── Controllers
-    │   └── FreelancersController.cs # RESTful API controller
+    │   └── freelancerController.cs # RESTful API controller
     ├── Presentation.csproj          # Project file with ASP.NET dependencies
     ├── Program.cs                   # Application startup and configuration
     ├── Requests

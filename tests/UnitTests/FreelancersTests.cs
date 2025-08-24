@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using CDN.Freelancers.Domain;
 using CDN.Freelancers.Infrastructure;
 using CDN.Freelancers.Application;
+using CDN.Freelancers.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using FluentAssertions;
@@ -68,9 +69,9 @@ public class FreelancersTests : IClassFixture<WebApplicationFactory<Program>>
     {
         var repo = CreateRepository();
         await repo.AddAsync(new Freelancer { Username = "dup", Email = "dup@example.com" });
-        await Assert.ThrowsAsync<DuplicateFreelancerException>(async () =>
+    await Assert.ThrowsAsync<DuplicateRecordException>(async () =>
             await repo.AddAsync(new Freelancer { Username = "dup", Email = "other@example.com" }));
-        await Assert.ThrowsAsync<DuplicateFreelancerException>(async () =>
+    await Assert.ThrowsAsync<DuplicateRecordException>(async () =>
             await repo.AddAsync(new Freelancer { Username = "other", Email = "dup@example.com" }));
     }
 
@@ -167,7 +168,26 @@ public class FreelancersTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task Create_Then_Get_And_Delete_Full_Lifecycle_StatusCodes()
     {
         var client = _factory.CreateClient();
-        var createResp = await client.PostAsJsonAsync("/api/v1/freelancers", new FreelancerRequestDto("alice", "alice@example.com", Skillsets: new() { "C#" }, Hobbies: new() { "Chess" }));
+        // Create a unique skill and hobby first to obtain their IDs
+        var skillName = $"Skill_{Guid.NewGuid():N}";
+        var hobbyName = $"Hobby_{Guid.NewGuid():N}";
+        var skillResp = await client.PostAsJsonAsync("/api/v1/skills", new { Name = skillName });
+        skillResp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createdSkill = await skillResp.Content.ReadFromJsonAsync<LookupCreated>();
+        createdSkill.Should().NotBeNull();
+
+        var hobbyResp = await client.PostAsJsonAsync("/api/v1/hobbies", new { Name = hobbyName });
+        hobbyResp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createdHobby = await hobbyResp.Content.ReadFromJsonAsync<LookupCreated>();
+        createdHobby.Should().NotBeNull();
+
+        // Now create the freelancer using IDs as required by the API contract
+        var createResp = await client.PostAsJsonAsync("/api/v1/freelancers", new {
+            Username = "alice",
+            Email = "alice@example.com",
+            SkillsetIds = new[] { createdSkill!.Id },
+            HobbyIds = new[] { createdHobby!.Id }
+        });
         createResp.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await createResp.Content.ReadFromJsonAsync<Freelancer>();
         created.Should().NotBeNull();
@@ -195,6 +215,12 @@ public class FreelancersTests : IClassFixture<WebApplicationFactory<Program>>
 
         var getAfterDelete = await client.GetAsync($"/api/v1/freelancers/{created.Id}");
         getAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private class LookupCreated
+    {
+        public Guid Id { get; set; }
+        public string? Name { get; set; }
     }
 
     [Fact]

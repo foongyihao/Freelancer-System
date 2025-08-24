@@ -1,4 +1,4 @@
-import { api } from '/feature/utils/api.js';
+import { api } from '/features/utils/api.js';
 import { renderFreelancerCard, updatePager } from '/ui/ui.js';
 
 export let currentPage = 1;
@@ -31,7 +31,7 @@ export async function fetchFreelancers({ term, skill, hobby } = {}) {
   const data = await api(`/api/v1/freelancers?${q.toString()}`).catch(()=>null);
   const items = data?.items || [];
   setTotalPages(data?.totalPages || 1);
-  renderFreelancerCard(items, (f, act) => import('/feature/freelancer/navigate_freelancer.js').then(m=> (m.handleAction || m.handleFreelancerAction)(f, act)));
+  renderFreelancerCard(items, (f, act) => import('/features/freelancer/navigate_freelancer.js').then(m=> (m.handleAction || m.handleFreelancerAction)(f, act)));
   updatePager(currentPage, totalPages);
 }
 

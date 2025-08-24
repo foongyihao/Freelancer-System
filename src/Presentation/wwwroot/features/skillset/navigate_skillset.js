@@ -1,4 +1,4 @@
-import { api } from '/feature/utils/api.js';
+import { api } from '/features/utils/api.js';
 
 let skillsPage = 1;
 let skillsTotal = 1;

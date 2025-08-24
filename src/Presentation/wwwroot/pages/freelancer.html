@@ -135,14 +135,14 @@
         <div><label>Email<br><input id="email" type="email" required/></label></div>
         <div><label>Phone<br><input id="phone"/></label></div>
         <div>
-            <label>Skillsets<br><input id="skillsets" placeholder="C#,SQL"/></label>
+            <input type="hidden" id="skillsets" />
             <div style="margin-top:.25rem;">
                 <label for="skillsSelect" style="display:block; font-size:.9rem; color:#444;">Choose skills:</label>
                 <select id="skillsSelect" multiple="multiple" size="6"></select>
             </div>
         </div>
         <div>
-            <label>Hobbies<br><input id="hobbies" placeholder="Chess,Reading"/></label>
+            <input type="hidden" id="hobbies" />
             <div style="margin-top:.25rem;">
                 <label for="hobbiesSelect" style="display:block; font-size:.9rem; color:#444;">Choose hobbies:</label>
                 <select id="hobbiesSelect" multiple="multiple" size="6"></select>
@@ -183,7 +183,7 @@
 </body>
 <!-- External JS modules (no inline logic) -->
 <script type="module" src="/ui/ui.js"></script>
-<script type="module" src="/feature/freelancer/state_freelancer.js"></script>
-<script type="module" src="/feature/freelancer/navigate_freelancer.js"></script>
-<script type="module" src="/feature/freelancer/create_freelancer.js"></script>
+<script type="module" src="/features/freelancer/state_freelancer.js"></script>
+<script type="module" src="/features/freelancer/navigate_freelancer.js"></script>
+<script type="module" src="/features/freelancer/create_freelancer.js"></script>
 </html>

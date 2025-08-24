@@ -1,14 +1,13 @@
 namespace CDN.Freelancers.Domain;
 
 /// <summary>
-/// Master hobby entity (e.g., "Chess", "Photography").
+/// Master hobby entity (e.g., "Chess", "Photography"). Unique by Name.
 /// </summary>
-public class Hobby
-{
+public class Hobby {
     /// <summary>
-    /// Surrogate integer primary key.
+    /// Surrogate GUID primary key.
     /// </summary>
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     /// <summary>
     /// Hobby name / label (unique).

@@ -54,12 +54,16 @@ public class FreelancerDbContext : DbContext
         // Configure Skillset entity (master)
         modelBuilder.Entity<Skillset>(e =>
         {
+            e.HasKey(s => s.Id);
+            e.Property(s => s.Id).ValueGeneratedOnAdd();
             e.Property(s => s.Name).IsRequired().HasMaxLength(100);
             e.HasIndex(s => s.Name).IsUnique();
         });
         // Configure Hobby entity (master)
         modelBuilder.Entity<Hobby>(e =>
         {
+            e.HasKey(h => h.Id);
+            e.Property(h => h.Id).ValueGeneratedOnAdd();
             e.Property(h => h.Name).IsRequired().HasMaxLength(100);
             e.HasIndex(h => h.Name).IsUnique();
         });
@@ -74,7 +78,7 @@ public class FreelancerDbContext : DbContext
                 .HasForeignKey(x => x.FreelancerId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Skillset)
-        .WithMany()
+                .WithMany()
                 .HasForeignKey(x => x.SkillsetId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -87,7 +91,7 @@ public class FreelancerDbContext : DbContext
                 .HasForeignKey(x => x.FreelancerId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Hobby)
-        .WithMany()
+                .WithMany()
                 .HasForeignKey(x => x.HobbyId)
                 .OnDelete(DeleteBehavior.Cascade);
         });

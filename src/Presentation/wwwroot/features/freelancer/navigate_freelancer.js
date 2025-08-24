@@ -2,7 +2,7 @@ import { api } from '/features/utils/api.js';
 import { refreshList, currentPage, pageSize } from '/features/freelancer/state_freelancer.js';
 import { resetForm, clearError } from '/ui/ui.js';
 
-// Load options into a dropdown, with optional pre-selection via opts.selected (array or comma string)
+// Load options into a dropdown
 async function loadSelectOptions(selectId, url, opts={}){
   const select = document.getElementById(selectId);
   if(!select) return;
@@ -12,12 +12,7 @@ async function loadSelectOptions(selectId, url, opts={}){
   const placeholder = document.createElement('option');
   placeholder.value = '';
   placeholder.disabled = true;
-  // Only keep placeholder selected if no preselected values
-  const selectedVals = Array.isArray(opts.selected)
-    ? opts.selected.map(String)
-    : (typeof opts.selected === 'string' ? opts.selected.split(',').map(s=>s.trim()).filter(Boolean) : []);
-  const selectedSet = new Set(selectedVals);
-  placeholder.selected = selectedSet.size === 0;
+  placeholder.selected = true;
   placeholder.textContent = opts.placeholder ?? 'Select... [hold CMD for multiple]';
   select.appendChild(placeholder);
   items.forEach(x=>{
@@ -25,7 +20,6 @@ async function loadSelectOptions(selectId, url, opts={}){
     // Use id as value but show name to user
     opt.value = x.id || x.name; // fallback if older payload
     opt.textContent = x.name;
-    if (selectedSet.has(String(opt.value))) opt.selected = true;
     select.appendChild(opt);
   });
 }
@@ -40,11 +34,6 @@ export async function handleFreelancerAction(f, act){
   // Store ids into hidden inputs for submission
   skillsets.value=(f.skillsets||[]).map(s=>s.id||s.name).join(',');
   hobbies.value=(f.hobbies||[]).map(h=>h.id||h.name).join(',');
-  // Pre-select options in multi-selects using selected param
-  const selSkillIds = (f.skillsets||[]).map(s=>String(s.id||s.name));
-  const selHobbyIds = (f.hobbies||[]).map(h=>String(h.id||h.name));
-  loadSelectOptions('skillsSelect', '/api/v1/skills?page=1&pageSize=50', { selected: selSkillIds });
-  loadSelectOptions('hobbiesSelect', '/api/v1/hobbies?page=1&pageSize=50', { selected: selHobbyIds });
     window.scrollTo({top:0, behavior:'smooth'});
   } else if(act==='archive'){
     await fetch(`/api/v1/freelancers/${f.id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ isArchived: !f.isArchived }) });
