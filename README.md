@@ -1,14 +1,15 @@
 # CDN Freelancers API & Simple Frontend
 
-Implementation of the basic requirements for the Backend .NET Developer Assessment (CRUD, search, archive, clean architecture, tests) plus an optional lightweight frontend. Recently refactored to unify pagination & search into a single endpoint and simplify repository methods.
+Implementation of the basic requirements for the Backend .NET Developer Assessment (CRUD, search, archive, clean architecture, tests) plus an optional lightweight frontend. 
 
 ## Tech Stack
 
 - .NET 9 ASP.NET Core (controllers) + static HTML/JS (no framework) UI
 - Clean Architecture style layering (Domain, Application, Infrastructure, Presentation)
-- EF Core (SQLite by default, optional InMemory)
+- EF Core 9 (SQLite by default, optional InMemory)
+- Global exception middleware → RFC 7807 ProblemDetails (409 duplicates, 404 not found, etc.)
 - xUnit unit tests
-- Swagger (Dev only)
+- Swagger/OpenAPI (enabled)
 
 ## Project Demo
 <img width="5088" height="3822" alt="image" src="https://github.com/user-attachments/assets/2b540b9c-022d-4624-ae76-f885568b0e90" />
@@ -31,28 +32,29 @@ Implementation of the basic requirements for the Backend .NET Developer Assessme
 ## Project Layout
 
 ```
-├── Application                     # Application layer: interfaces and business logic
-│   ├── Application.csproj          # Project file with dependencies
-│   └── FreelancerContracts.cs      # Repository interface, PaginatedResult, exceptions
+├── Application                     # Application layer: interfaces and contracts
+│   ├── Application.csproj          # Project file
+│   └── [placeholder]Contracts.cs   # Contracts for the repositories to implement
 ├── Domain                          # Domain layer: core business entities
-│   ├── Domain.csproj               # Project file with minimal dependencies
-├── Infrastructure                  # Infrastructure layer: implementation of interfaces
+│   ├── Domain.csproj               # Project file
+│   ├── [placeholder].cs            # Represents entities in the system (Freelancer, Skillset, Hobby)
+├── Infrastructure                  # Infrastructure layer: EF Core + repos + middleware
+│   ├── Middlewares                 # Middleware components
+│   ├── Repositories                # Implementations of repository interfaces
 │   ├── FreelancerDbContext.cs      # EF Core database context
-│   ├── FreelancerRepository.cs     # Implementation of IFreelancerRepository
-│   └── Infrastructure.csproj       # Project file with dependencies on EF Core
+│   └── Infrastructure.csproj       # Project file
 └── Presentation                    # Presentation layer: API controllers and UI
-    ├── Controllers
-    │   └── freelancerController.cs # RESTful API controller
-    ├── Presentation.csproj          # Project file with ASP.NET dependencies
-    ├── Program.cs                   # Application startup and configuration
-    ├── Requests
-    │   ├── FreelancerPatchRequest.cs # DTO for PATCH operations
-    │   └── FreelancerRequest.cs      # DTO for POST/PUT operations
-    ├── appsettings.json              # Application configuration
-    ├── freelancers.db                # SQLite database file
-    └── wwwroot
-        ├── pages                     # HTML pages
-        └── feature                   # JavaScript for frontend functionality
+   ├── Controllers                  # API controllers 
+   ├── Presentation.csproj          # Project file with ASP.NET dependencies
+   ├── Program.cs                   # Application startup and configuration
+   ├── Requests                     # DTOs for incoming requests
+   ├── appsettings.json             # Application configuration
+   ├── freelancers.db               # SQLite database file (when using SQLite)
+   └── wwwroot
+      ├── features                  # JavaScript code for frontend features
+      ├── ui                        # Common UI specific JavaScript code
+      ├── pages                     # HTML pages
+      └── index.html                # Entry HTML file
 ```
 
 ### Clean Architecture Explanation
@@ -100,7 +102,7 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Presentation/Present
 ```
 
 Then open: http://localhost:5000  (serves the simple UI)
-Swagger: http://localhost:5000/swagger
+Swagger UI: http://localhost:5000/swagger
 
 ## Features:
 
@@ -110,6 +112,8 @@ Swagger: http://localhost:5000/swagger
 - Delete
 - Search by username/email (wildcard contains) combined with listing (single endpoint)
 - Pagination & filtering (skills, hobbies) in same unified endpoint
+- Master data CRUD for skills and hobbies (with duplicate checks)
+- Consistent error responses via ProblemDetails (409 on duplicates, 404 on missing)
 
 ## Core API Endpoints
 
@@ -138,11 +142,11 @@ Request body (POST/PUT):
 
 ```
 {
-	"username": "alice",
-	"email": "alice@example.com",
-	"phoneNumber": "123456",
-	"skillsets": ["C#","SQL"],
-	"hobbies": ["Chess"]
+   "username": "alice",
+   "email": "alice@example.com",
+   "phoneNumber": "123456",
+   "skillsetIds": ["6f9b2c3a-..."],
+   "hobbyIds": ["2a1d4e5f-..."]
 }
 ```
 
@@ -164,7 +168,7 @@ Partial archive toggle (PATCH):
 Switch to InMemory for quick testing: set `UseSqlite` to false.
 Switch to SQL Server: add `Microsoft.EntityFrameworkCore.SqlServer` package and adjust DbContext registration.
 
-Database schema is ensured via `EnsureCreated()` (good for demos). For production add migrations.
+When using SQLite the database file is created automatically if missing. For production use migrations (`dotnet ef migrations`) instead of EnsureCreated.
 
 ## Tests
 
@@ -172,10 +176,10 @@ Database schema is ensured via `EnsureCreated()` (good for demos). For productio
 dotnet test
 ```
 
-Current tests cover: add/get, search (via unified paged call), archive filter, pagination, filtering by skill/hobby, duplicates.
+Current tests cover: add/get, search (via unified paged call), archive filter, pagination, filtering by skill/hobby, duplicates with proper HTTP 409 mapping.
 
 ## CI
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) builds and tests on every push / PR to `main`.
+Optional GitHub Actions workflow can build and test on each push/PR to `main`.
 
 ![CI](https://github.com/foongyihao/Freelancer-System/actions/workflows/ci.yml/badge.svg)

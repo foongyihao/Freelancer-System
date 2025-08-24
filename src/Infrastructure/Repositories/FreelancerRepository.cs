@@ -20,8 +20,8 @@ public class FreelancerRepository : IFreelancerRepository {
     /// <inheritdoc />
     public async Task AddAsync(Freelancer freelancer, CancellationToken ct = default) {
         // Duplicate check (username/email uniqueness)
-    var exists = await _ctx.Freelancers.AnyAsync(f => f.Username == freelancer.Username || f.Email == freelancer.Email, ct);
-    if (exists) throw new DuplicateRecordException(nameof(Freelancer), $"{freelancer.Username}/{freelancer.Email}", "Username or Email already exists.");
+        var exists = await _ctx.Freelancers.AnyAsync(f => f.Username == freelancer.Username || f.Email == freelancer.Email, ct);
+        if (exists) throw new DuplicateRecordException(nameof(Freelancer), $"{freelancer.Username}/{freelancer.Email}", "Username or Email already exists.");
 
         freelancer.PhoneNumber ??= string.Empty;
         if (freelancer.Id == Guid.Empty) freelancer.Id = Guid.NewGuid();
@@ -91,8 +91,8 @@ public class FreelancerRepository : IFreelancerRepository {
             .FirstOrDefaultAsync(f=>f.Id==freelancer.Id, ct);
         if (existing == null) return;
 
-    var duplicate = await _ctx.Freelancers.AnyAsync(f => f.Id != freelancer.Id && (f.Username == freelancer.Username || f.Email == freelancer.Email), ct);
-    if (duplicate) throw new DuplicateRecordException(nameof(Freelancer), $"{freelancer.Username}/{freelancer.Email}", "Username or Email already exists.");
+        var duplicate = await _ctx.Freelancers.AnyAsync(f => f.Id != freelancer.Id && (f.Username == freelancer.Username || f.Email == freelancer.Email), ct);
+        if (duplicate) throw new DuplicateRecordException(nameof(Freelancer), $"{freelancer.Username}/{freelancer.Email}", "Username or Email already exists.");
 
         existing.Username = freelancer.Username;
         existing.Email = freelancer.Email;
